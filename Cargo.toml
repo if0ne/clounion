@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "storage/main-server",
+    "storage/data-node",
+    "session",
+    "client"
+]
