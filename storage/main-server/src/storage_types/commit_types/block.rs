@@ -2,8 +2,10 @@ use crate::constants::MAX_REPLICAS;
 use smallvec::SmallVec;
 use uuid::Uuid;
 
-pub struct Block<T> {
-    id: Uuid,
-    dst: T,
-    replicas: SmallVec<[T; MAX_REPLICAS]>,
+#[derive(Clone)]
+pub struct Block<Dst, Hash> {
+    pub(crate) id: Uuid,
+    pub(crate) dst: Dst,
+    pub(crate) replicas: SmallVec<[Dst; MAX_REPLICAS]>,
+    pub(crate) checksum: Hash,
 }

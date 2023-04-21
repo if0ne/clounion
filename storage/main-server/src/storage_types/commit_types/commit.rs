@@ -1,5 +1,6 @@
 use super::sequence::Sequence;
 
-pub enum Commits<T> {
-    Sequence(Sequence<T>),
+#[derive(Clone)]
+pub enum Commits<T, Hash> {
+    Sequence(Sequence<T, Hash>),
 }

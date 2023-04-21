@@ -1,5 +1,7 @@
 use super::commit_types::block::Block;
+use super::commit_types::merkle_tree::MerkleTree;
 
-pub struct LargeFile<T> {
-    parts: Vec<Block<T>>,
+#[derive(Clone)]
+pub struct LargeFile<T, Hash> {
+    parts: Vec<MerkleTree<T, Hash>>,
 }

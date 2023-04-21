@@ -9,20 +9,38 @@ use uuid::Uuid;
 pub type MetadataResult<T> = Result<T, MetadataError>;
 
 #[async_trait]
-pub trait MetadataService<T, Hash> {
-    async fn create_small_file<P: AsRef<Path>>(
+pub trait MetadataService {
+    type Dst;
+    type Hash;
+
+    async fn create_small_file<P: AsRef<Path> + Send>(
         &self,
         params: CreationParam<P>,
-    ) -> MetadataResult<Object<T, Hash>>;
+    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
 
-    async fn create_large_file<P: AsRef<Path>>(
+    async fn create_large_file<P: AsRef<Path> + Send>(
         &self,
         path: CreationParam<P>,
-    ) -> MetadataResult<Object<T, Hash>>;
+    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+
+    async fn get_small_file<P: AsRef<Path> + Send>(
+        &self,
+        path: P,
+    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+
+    async fn get_large_file<P: AsRef<Path> + Send>(
+        &self,
+        path: P,
+    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+
+    async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()>;
 }
 
 pub struct CreationParam<P: AsRef<Path>> {
-    user_id: Uuid,
-    group_id: SmallVec<[Uuid; MAX_GROUP_ACCESS]>,
-    path: P,
+    pub user_id: Uuid,
+    pub group_id: SmallVec<[Uuid; MAX_GROUP_ACCESS]>,
+    pub path: P,
+    pub size: u128,
 }
+
+unsafe impl<P: AsRef<Path>> Send for CreationParam<P> {}

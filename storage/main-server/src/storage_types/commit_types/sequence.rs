@@ -1,5 +1,6 @@
 use super::block::Block;
 
-pub struct Sequence<T> {
-    seq: Vec<Block<T>>,
+#[derive(Clone)]
+pub struct Sequence<T, Hash> {
+    pub(crate) seq: Vec<Block<T, Hash>>,
 }

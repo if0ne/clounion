@@ -1,4 +1,4 @@
-mod commit_types;
-mod large_file;
+pub mod commit_types;
+pub mod large_file;
 pub mod object;
-mod small_file;
+pub mod small_file;
