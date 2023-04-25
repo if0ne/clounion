@@ -68,6 +68,13 @@ impl MetadataService for MetadataServiceImpl {
         todo!()
     }
 
+    async fn add_commit_to_small_file<P: AsRef<Path> + Send>(
+        &self,
+        path: P,
+    ) -> MetadataResult<Object<Self::Dst, Self::Hash>> {
+        todo!()
+    }
+
     async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()> {
         todo!()
     }

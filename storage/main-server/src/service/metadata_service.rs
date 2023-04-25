@@ -33,6 +33,11 @@ pub trait MetadataService {
         path: P,
     ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
 
+    async fn add_commit_to_small_file<P: AsRef<Path> + Send>(
+        &self,
+        path: P,
+    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+
     async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()>;
 }
 

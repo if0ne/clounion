@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package registry_main_server;
+
+service RegistryDataNodeService {
+  rpc registry(RegistryRequest) returns (RegistryResponse) {}
+}
+
+message RegistryRequest {
+  string data_node_address = 1;
+  uint64 block_size = 2;
+}
+
+message RegistryResponse {
+}
