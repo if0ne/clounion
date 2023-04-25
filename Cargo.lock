@@ -408,6 +408,7 @@ dependencies = [
  "prost",
  "prost-types",
  "serde",
+ "shared",
  "sysinfo",
  "tokio",
  "tokio-stream",
@@ -843,6 +844,7 @@ dependencies = [
  "prost",
  "prost-types",
  "serde",
+ "shared",
  "smallvec",
  "sysinfo",
  "tokio",
@@ -1325,6 +1327,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "900fba806f70c630b0a382d0d825e17a0f19fcd059a2ade1ff237bcddf446b31"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tonic",
 ]
 
 [[package]]

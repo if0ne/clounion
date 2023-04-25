@@ -2,6 +2,7 @@
 members = [
     "storage/main-server",
     "storage/data-node",
+    "storage/shared"
 ]
 
 [workspace.dependencies]

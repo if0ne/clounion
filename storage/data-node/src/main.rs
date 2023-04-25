@@ -1,16 +1,16 @@
-use crate::data_node_controller::DataNodeController;
-use std::net::SocketAddr;
-use tonic::transport::Server;
 use crate::config::Config;
+use crate::data_node_controller::DataNodeController;
 use crate::data_node_info::DataNodeInfo;
 use crate::registry_client::RegistryClient;
+use std::net::SocketAddr;
+use tonic::transport::Server;
 
 mod config;
 mod data_node_controller;
 mod data_node_info;
+mod data_node_service;
 mod disk_stats;
 mod registry_client;
-mod data_node_service;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

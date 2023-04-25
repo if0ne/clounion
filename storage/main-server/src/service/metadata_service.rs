@@ -1,12 +1,11 @@
 use crate::constants::MAX_GROUP_ACCESS;
-use crate::service::error::MetadataError;
 use crate::storage_types::object::Object;
 use async_trait::async_trait;
 use smallvec::SmallVec;
 use std::path::Path;
 use uuid::Uuid;
 
-pub type MetadataResult<T> = Result<T, MetadataError>;
+pub type MetadataResult<T> = Result<T, shared::main_server_error::MetadataError>;
 
 #[async_trait]
 pub trait MetadataService {

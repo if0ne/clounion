@@ -7,18 +7,16 @@ use crate::data_node_controller::proto_data_node::{
     CreateBlocksRequest, CreateBlocksResponse, DeleteBlocksRequest, EmptyResponse,
     ReadBlockRequest, ReadBlockResponse, UpdateBlockRequest,
 };
+use crate::data_node_info::DataNodeInfo;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
-use crate::data_node_info::DataNodeInfo;
 
 #[derive(Clone)]
-pub struct DataNodeController {
-}
+pub struct DataNodeController {}
 
 impl DataNodeController {
     pub async fn get_service(data_node_info: DataNodeInfo) -> DataNodeServiceServer<Self> {
-        DataNodeServiceServer::new(Self {
-        })
+        DataNodeServiceServer::new(Self {})
     }
 }
 

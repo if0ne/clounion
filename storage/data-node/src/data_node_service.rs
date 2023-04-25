@@ -1,13 +1,11 @@
 use tokio::sync::mpsc::Sender;
 use uuid::Uuid;
 
-pub struct BlockStorageServiceImpl {
-}
+pub struct BlockStorageServiceImpl {}
 
 impl BlockStorageServiceImpl {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 
     pub async fn create_block(&self) -> Result<Uuid, ()> {

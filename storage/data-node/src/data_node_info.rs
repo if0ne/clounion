@@ -89,10 +89,7 @@ impl DataNodeInfo {
         Err(())
     }
 
-    pub(crate) async fn found_block(
-        &self,
-        uuid: impl AsRef<Path>,
-    ) -> Result<PathBuf, ()> {
+    pub(crate) async fn found_block(&self, uuid: impl AsRef<Path>) -> Result<PathBuf, ()> {
         for disk in &self.disks {
             let path = disk.mount.join(&self.working_directory).join(&uuid);
             if path.exists() {
