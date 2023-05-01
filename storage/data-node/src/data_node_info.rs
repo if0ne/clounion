@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::disk_stats::DiskStats;
+use shared::data_node_error::DataNodeError;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
@@ -13,7 +14,7 @@ pub struct DataNodeInfo {
     pub self_address: String,
     pub(crate) working_directory: PathBuf,
     pub(crate) block_size: usize,
-    pub(crate) read_buffer: usize,
+    pub(crate) io_buffer: usize,
     pub(crate) total_space: u64,
     pub(crate) disks: Vec<DiskStats>,
 }
@@ -69,7 +70,7 @@ impl DataNodeInfo {
         Self {
             port: config.port,
             self_address: config.self_address,
-            read_buffer: config.read_buffer,
+            io_buffer: config.read_buffer,
             working_directory,
             block_size: config.block_size,
             total_space,
@@ -77,7 +78,7 @@ impl DataNodeInfo {
         }
     }
 
-    pub(crate) async fn get_disk_for_new_block(&self) -> Result<&DiskStats, ()> {
+    pub(crate) async fn get_disk_for_new_block(&self) -> Result<&DiskStats, DataNodeError> {
         for disk in &self.disks {
             let mut writer = disk.used_space.write().await;
             if *writer + (self.block_size as u64) <= self.total_space {
@@ -86,10 +87,13 @@ impl DataNodeInfo {
             }
         }
 
-        Err(())
+        Err(DataNodeError::NoSpace)
     }
 
-    pub(crate) async fn found_block(&self, uuid: impl AsRef<Path>) -> Result<PathBuf, ()> {
+    pub(crate) async fn found_block<P: AsRef<Path>>(
+        &self,
+        uuid: P,
+    ) -> Result<PathBuf, DataNodeError> {
         for disk in &self.disks {
             let path = disk.mount.join(&self.working_directory).join(&uuid);
             if path.exists() {
@@ -97,7 +101,10 @@ impl DataNodeInfo {
             }
         }
 
-        Err(())
+        Err(DataNodeError::BlockNotFound(format!(
+            "{} not found.",
+            uuid.as_ref().to_string_lossy()
+        )))
     }
 
     async fn save_state(config: &Config, suffix: &str) -> std::io::Result<()> {

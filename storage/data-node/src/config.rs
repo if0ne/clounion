@@ -5,10 +5,10 @@ use tokio::io::AsyncReadExt;
 
 #[derive(Deserialize, Parser)]
 pub struct Config {
-    // Address of main server
+    /// Address of main server
     #[arg(short, long)]
     pub(crate) main_server_address: String,
-    // Address of this instance
+    /// Address of this instance
     #[arg(short, long)]
     pub(crate) self_address: String,
     /// Port

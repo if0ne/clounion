@@ -4,6 +4,7 @@ use std::fmt::Formatter;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DataNodeError {
+    CreateBlocksError(String),
     CreateBlockError(String),
     BlockNotFound(String),
     WrongUuid(String),
@@ -19,6 +20,9 @@ impl_converter!(DataNodeError);
 impl std::fmt::Display for DataNodeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            DataNodeError::CreateBlocksError(str) => {
+                write!(f, "Fail to create blocks. {0}", str)
+            }
             DataNodeError::CreateBlockError(str) => {
                 write!(f, "Fail to create block {0}", str)
             }

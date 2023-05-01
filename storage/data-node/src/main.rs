@@ -5,10 +5,11 @@ use crate::registry_client::RegistryClient;
 use std::net::SocketAddr;
 use tonic::transport::Server;
 
+mod block_storage;
+mod block_storage_service;
 mod config;
 mod data_node_controller;
 mod data_node_info;
-mod data_node_service;
 mod disk_stats;
 mod registry_client;
 
@@ -43,7 +44,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Unable to parse socket address");
 
     let (_, health_service) = tonic_health::server::health_reporter();
-    let data_node = DataNodeController::get_service(data_node_info).await;
+    let data_node = DataNodeController::get_service(data_node_info)
+        .await
+        .unwrap();
 
     tracing::info!("Starting server on {}:{}", addr.ip(), addr.port());
     Server::builder()

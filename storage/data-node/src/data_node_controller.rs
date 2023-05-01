@@ -2,6 +2,7 @@ pub mod proto_data_node {
     tonic::include_proto!("data_node");
 }
 
+use crate::block_storage_service::BlockStorageService;
 use crate::data_node_controller::proto_data_node::{
     data_node_service_server::{DataNodeService, DataNodeServiceServer},
     CreateBlocksRequest, CreateBlocksResponse, DeleteBlocksRequest, EmptyResponse,
@@ -9,14 +10,21 @@ use crate::data_node_controller::proto_data_node::{
 };
 use crate::data_node_info::DataNodeInfo;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status};
+use tonic::{Request, Response, Status, Streaming};
 
-#[derive(Clone)]
-pub struct DataNodeController {}
+pub struct DataNodeController {
+    block_storage_service: BlockStorageService,
+}
 
 impl DataNodeController {
-    pub async fn get_service(data_node_info: DataNodeInfo) -> DataNodeServiceServer<Self> {
-        DataNodeServiceServer::new(Self {})
+    pub async fn get_service(
+        data_node_info: DataNodeInfo,
+    ) -> std::io::Result<DataNodeServiceServer<Self>> {
+        let block_storage_service = BlockStorageService::new(data_node_info).await?;
+
+        Ok(DataNodeServiceServer::new(Self {
+            block_storage_service,
+        }))
     }
 }
 
@@ -27,7 +35,7 @@ impl DataNodeService for DataNodeController {
     async fn create_blocks(
         &self,
         request: Request<CreateBlocksRequest>,
-    ) -> Result<Response<CreateBlocksResponse>, tonic::Status> {
+    ) -> Result<Response<CreateBlocksResponse>, Status> {
         todo!()
     }
 
@@ -40,7 +48,7 @@ impl DataNodeService for DataNodeController {
 
     async fn update_block(
         &self,
-        request: Request<UpdateBlockRequest>,
+        request: Request<Streaming<UpdateBlockRequest>>,
     ) -> Result<Response<EmptyResponse>, Status> {
         todo!()
     }
