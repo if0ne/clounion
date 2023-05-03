@@ -7,6 +7,7 @@ use tonic::transport::{Channel, Endpoint};
 use proto_registry_main_server::{
     registry_data_node_service_client::RegistryDataNodeServiceClient, RegistryRequest,
 };
+use shared::data_node_error::DataNodeError;
 
 use super::config::Config;
 
@@ -24,7 +25,7 @@ impl RegistryClient {
         })
     }
 
-    pub async fn send_registry(&mut self, config: &Config) -> Result<(), ()> {
+    pub async fn send_registry(&mut self, config: &Config) -> Result<(), DataNodeError> {
         let response = self
             .inner
             .registry(RegistryRequest {
@@ -34,10 +35,10 @@ impl RegistryClient {
             .await;
 
         if let Err(err) = response {
-            /*match err.try_into() {
+            match err.try_into() {
                 Ok(err) => return Err(err),
                 Err(err) => tracing::error!("{}", err.to_string()),
-            }*/
+            }
         }
 
         Ok(())

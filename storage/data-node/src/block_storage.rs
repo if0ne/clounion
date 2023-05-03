@@ -83,6 +83,8 @@ impl BlockStorage {
         bytes: Range<usize>,
         data: &[u8],
     ) -> Result<(), DataNodeError> {
+        let (path, size) = self.get_block_info(block_id, part).await?;
+
         if data.len() > self.data_node_info.block_size {
             return Err(DataNodeError::BlockOverflow(
                 self.data_node_info.block_size,
@@ -90,14 +92,21 @@ impl BlockStorage {
             ));
         }
 
-        let path = self
-            .data_node_info
-            .found_block(format!("{}_{}", block_id.as_u128(), part))
-            .await?;
+        if data.len() > bytes.len() {
+            return Err(DataNodeError::BlockOverflow(bytes.len(), data.len()));
+        }
+
+        if data.len() > (bytes.start..self.data_node_info.block_size).len() {
+            return Err(DataNodeError::BlockOverflow(
+                (bytes.start..size).len(),
+                data.len(),
+            ));
+        }
+
         let file = OpenOptions::new()
             .write(true)
             .read(false)
-            .open(path)
+            .open(&path)
             .await
             .map_err(|_| DataNodeError::UpdateBlockError(block_id.to_string()))?;
 
@@ -148,6 +157,31 @@ impl BlockStorage {
 
     pub fn get_data_node_info(&self) -> &DataNodeInfo {
         &self.data_node_info
+    }
+
+    pub async fn get_checksum(&self, block_id: Uuid, part: usize) -> Result<u32, DataNodeError> {
+        let (path, _) = self.get_block_info(block_id, part).await?;
+
+        let file = OpenOptions::new()
+            .write(false)
+            .read(true)
+            .open(&path)
+            .await
+            .map_err(|_| DataNodeError::UpdateBlockError(block_id.to_string()))?;
+
+        let mut reader = BufReader::new(file);
+        let _ = reader
+            .seek(SeekFrom::Start(0))
+            .await
+            .map_err(|err| DataNodeError::UpdateBlockError(err.to_string()))?;
+
+        let mut buffer = vec![];
+        let _ = reader
+            .read_to_end(&mut buffer)
+            .await
+            .map_err(|err| DataNodeError::UpdateBlockError(err.to_string()))?;
+
+        Ok(crc32fast::hash(&buffer))
     }
 }
 

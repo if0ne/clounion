@@ -1,8 +1,7 @@
 use crate::block_storage::BlockStorage;
-use crate::data_node_controller::proto_data_node::UpdateBlockRequest;
 use crate::data_node_info::DataNodeInfo;
 use shared::data_node_error::DataNodeError;
-use tokio::fs::OpenOptions;
+use std::ops::Range;
 use tokio::sync::mpsc::Sender;
 use uuid::Uuid;
 
@@ -93,17 +92,20 @@ impl BlockStorageService {
         &self,
         block_id: Uuid,
         part: usize,
-        mut rx: tonic::Streaming<UpdateBlockRequest>,
+        range: Range<usize>,
+        data: &[u8],
     ) -> Result<(), DataNodeError> {
-        let (path, file_size) = self.block_storage.get_block_info(block_id, part).await?;
+        self.block_storage
+            .update_block(block_id, part, range, data)
+            .await
+    }
 
-        let buffer_size = self.block_storage.get_data_node_info().io_buffer;
-
-        let chunk_count = file_size / buffer_size + 1;
-
-        while let Ok(Some(data)) = rx.message().await {}
-
-        Ok(())
+    pub async fn get_block_checksum(
+        &self,
+        block_id: Uuid,
+        part: usize,
+    ) -> Result<u32, DataNodeError> {
+        self.block_storage.get_checksum(block_id, part).await
     }
 
     pub async fn delete_block(&self, block_id: Uuid, part: usize) -> Result<(), DataNodeError> {

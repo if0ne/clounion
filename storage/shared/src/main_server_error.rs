@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 pub enum MetadataError {}
 
 impl Display for MetadataError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }

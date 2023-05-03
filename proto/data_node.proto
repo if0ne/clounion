@@ -7,8 +7,8 @@ message EmptyResponse {}
 service DataNodeService {
   rpc CreateBlocks(CreateBlocksRequest) returns (CreateBlocksResponse) {}
   rpc ReadBlock(ReadBlockRequest) returns (stream ReadBlockResponse) {}
-  rpc UpdateBlock(stream UpdateBlockRequest) returns (EmptyResponse) {}
-  rpc DeleteBlock(DeleteBlocksRequest) returns (EmptyResponse) {}
+  rpc UpdateBlock(stream UpdateBlockRequest) returns (UpdateBlockResponse) {}
+  rpc DeleteBlock(DeleteBlockRequest) returns (EmptyResponse) {}
 }
 
 message BlockInfo {
@@ -19,6 +19,10 @@ message BlockInfo {
 message Range {
   uint64 start = 1;
   uint64 end = 2;
+}
+
+message UpdateBlockResponse {
+  uint32 checksum = 1;
 }
 
 message CreateBlocksRequest {
@@ -42,10 +46,11 @@ message ReadBlockResponse {
 message UpdateBlockRequest {
   bytes block_id = 1;
   uint64 part = 2;
-
   bytes data = 3;
+  Range range = 4;
+  uint32 hash = 5;
 }
 
-message DeleteBlocksRequest {
-  repeated bytes block_id = 1;
+message DeleteBlockRequest {
+  BlockInfo block = 1;
 }

@@ -1,6 +1,6 @@
 main_server_address = "[::1]:8000"
 self_address = "[::1]"
 port = 40000
-block_size = 2048
+block_size = 65536
 working_directory = "debug_dir"
 read_buffer = 4096

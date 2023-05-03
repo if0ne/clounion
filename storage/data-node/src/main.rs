@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(mut client) => {
             let response = client.send_registry(&config).await;
             if let Err(response) = response {
-                //tracing::error!("{}", response.to_string());
+                tracing::error!("{}", response.to_string());
             }
         }
         Err(err) => {
