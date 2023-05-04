@@ -16,6 +16,7 @@ futures = { version = "0.3.25" }
 hyper = { version = "0.14", features = ["full"] }
 prost = { version = "0.11.0" }
 prost-types = { version = "0.11.2" }
+redis = { version = "0.23.0", features = ["tokio-comp", "cluster", "json"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = { version = "1.0.89" }
 smallvec = { version = "1.10.0" }

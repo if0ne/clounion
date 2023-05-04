@@ -1,4 +1,4 @@
-pub mod proto_data_node {
+mod proto_data_node {
     tonic::include_proto!("data_node");
 }
 
