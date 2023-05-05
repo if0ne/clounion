@@ -48,8 +48,10 @@ impl DataNodeService for DataNodeController {
                 part: el.0 as u64,
             })
             .collect();
-
-        Ok(Response::new(CreateBlocksResponse { blocks }))
+        Ok(Response::new(CreateBlocksResponse {
+            blocks,
+            endpoint: self.block_storage_service.get_endpoint(),
+        }))
     }
 
     type ReadBlockStream = ReceiverStream<Result<ReadBlockResponse, Status>>;

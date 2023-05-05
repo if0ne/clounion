@@ -24,6 +24,10 @@ impl BlockStorage {
         Ok(Self { data_node_info })
     }
 
+    pub fn get_endpoint(&self) -> String {
+        self.data_node_info.get_endpoint()
+    }
+
     pub async fn create_block(
         &self,
         part: usize,

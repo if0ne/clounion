@@ -107,6 +107,10 @@ impl DataNodeInfo {
         )))
     }
 
+    pub(crate) fn get_endpoint(&self) -> String {
+        format!("{}:{}", self.self_address, self.port)
+    }
+
     async fn save_state(config: &Config, suffix: &str) -> std::io::Result<()> {
         let mut hasher = DefaultHasher::new();
         ((config.block_size as u64 * 2) >> 6).hash(&mut hasher);

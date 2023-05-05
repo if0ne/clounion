@@ -31,6 +31,7 @@ message CreateBlocksRequest {
 
 message CreateBlocksResponse {
   repeated BlockInfo blocks = 1;
+  string endpoint = 2;
 }
 
 message ReadBlockRequest {

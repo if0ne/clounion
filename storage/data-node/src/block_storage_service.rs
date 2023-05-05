@@ -16,6 +16,10 @@ impl BlockStorageService {
         Ok(Self { block_storage })
     }
 
+    pub fn get_endpoint(&self) -> String {
+        self.block_storage.get_endpoint()
+    }
+
     pub async fn create_blocks(&self, count: usize) -> Result<Vec<(usize, Uuid)>, DataNodeError> {
         let uuid = Uuid::new_v4();
 

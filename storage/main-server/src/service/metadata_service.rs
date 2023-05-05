@@ -45,6 +45,7 @@ pub trait MetadataService {
     async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()>;
 }
 
+#[derive(Debug)]
 pub struct CreationParam<P: AsRef<Path>> {
     pub user_id: Uuid,
     pub group_id: SmallVec<[Uuid; MAX_GROUP_ACCESS]>,
