@@ -1,6 +1,7 @@
 use crate::constants::MAX_GROUP_ACCESS;
 use crate::storage_types::object::Object;
 use async_trait::async_trait;
+use serde::Serialize;
 use smallvec::SmallVec;
 use std::path::Path;
 use uuid::Uuid;
@@ -9,8 +10,8 @@ pub type MetadataResult<T> = Result<T, shared::main_server_error::MetadataError>
 
 #[async_trait]
 pub trait MetadataService {
-    type Dst;
-    type Hash;
+    type Dst: Serialize;
+    type Hash: Serialize;
 
     async fn create_small_file<P: AsRef<Path> + Send>(
         &self,
@@ -50,7 +51,7 @@ pub struct CreationParam<P: AsRef<Path>> {
     pub user_id: Uuid,
     pub group_id: SmallVec<[Uuid; MAX_GROUP_ACCESS]>,
     pub path: P,
-    pub size: u128,
+    pub size: usize,
 }
 
 unsafe impl<P: AsRef<Path>> Send for CreationParam<P> {}

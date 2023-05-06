@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::data_node_controller::DataNodeController;
 use crate::data_node_info::DataNodeInfo;
+use crate::main_server_client::MainServerClient;
 use crate::registry_client::RegistryClient;
 use std::net::SocketAddr;
 use tonic::transport::Server;
@@ -11,6 +12,7 @@ mod config;
 mod data_node_controller;
 mod data_node_info;
 mod disk_stats;
+mod main_server_client;
 mod registry_client;
 
 #[tokio::main]
@@ -38,13 +40,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let main_server_client = MainServerClient::new(config.get_main_server_addr()).await;
     let data_node_info = DataNodeInfo::new(config).await;
     let addr = format!("{}:{}", data_node_info.self_address, data_node_info.port)
         .parse::<SocketAddr>()
         .expect("Unable to parse socket address");
 
     let (_, health_service) = tonic_health::server::health_reporter();
-    let data_node = DataNodeController::get_service(data_node_info)
+    let data_node = DataNodeController::get_service(data_node_info, main_server_client)
         .await
         .unwrap();
 

@@ -2,6 +2,7 @@ mod proto_main_server {
     tonic::include_proto!("main_server");
 }
 
+use crate::service::metadata_controller::proto_main_server::AddChecksumRequest;
 use proto_main_server::main_server_service_server::MainServerService;
 use proto_main_server::{
     AddCommitSmallFileRequest, BlockInfo, CreateFileRequest, CreateLargeFileResponse,
@@ -9,8 +10,17 @@ use proto_main_server::{
     GetSmallFileLastVersionRequest, GetSmallFileRequest, LargeFileResponse,
 };
 use tonic::{Request, Response, Status};
+use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
 
 pub struct MetadataController {}
+
+impl MetadataController {
+    pub async fn new() -> MainServerServiceServer<Self> {
+        MainServerServiceServer::new(Self {
+
+        })
+    }
+}
 
 #[tonic::async_trait]
 impl MainServerService for MetadataController {
@@ -59,6 +69,13 @@ impl MainServerService for MetadataController {
     async fn delete_file(
         &self,
         request: Request<DeleteFileRequest>,
+    ) -> Result<Response<EmptyResponse>, Status> {
+        todo!()
+    }
+
+    async fn add_checksum(
+        &self,
+        request: Request<AddChecksumRequest>,
     ) -> Result<Response<EmptyResponse>, Status> {
         todo!()
     }

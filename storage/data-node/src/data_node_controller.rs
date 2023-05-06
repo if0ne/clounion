@@ -9,6 +9,7 @@ use crate::data_node_controller::proto_data_node::{
     ReadBlockRequest, ReadBlockResponse, UpdateBlockRequest, UpdateBlockResponse,
 };
 use crate::data_node_info::DataNodeInfo;
+use crate::main_server_client::MainServerClient;
 use shared::data_node_error::DataNodeError;
 use std::sync::Arc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -18,16 +19,19 @@ use uuid::Uuid;
 
 pub struct DataNodeController {
     block_storage_service: Arc<BlockStorageService>,
+    main_server_client: MainServerClient,
 }
 
 impl DataNodeController {
     pub async fn get_service(
         data_node_info: DataNodeInfo,
+        main_server_client: MainServerClient,
     ) -> std::io::Result<DataNodeServiceServer<Self>> {
         let block_storage_service = BlockStorageService::new(data_node_info).await?;
 
         Ok(DataNodeServiceServer::new(Self {
             block_storage_service: Arc::new(block_storage_service),
+            main_server_client,
         }))
     }
 }
@@ -126,6 +130,7 @@ impl DataNodeService for DataNodeController {
         //Unsafe
         let mut block_id = Uuid::nil();
         let mut block_part = 0;
+        let mut filename = String::new();
 
         while let Some(message) = inner.message().await? {
             let Ok(uuid) = Uuid::from_slice(&message.block_id) else {
@@ -136,6 +141,7 @@ impl DataNodeService for DataNodeController {
 
             block_id = uuid;
             block_part = part as usize;
+            filename = message.filename;
 
             if let Some(range) = message.range {
                 let range = (range.start as usize)..(range.end as usize);
@@ -155,7 +161,19 @@ impl DataNodeService for DataNodeController {
             .get_block_checksum(block_id, block_part)
             .await?;
 
-        Ok(Response::new(UpdateBlockResponse { checksum }))
+        self.main_server_client
+            .add_checksum(
+                &filename,
+                crate::main_server_client::proto_main_server::BlockInfo {
+                    block_id: block_id.to_bytes_le().to_vec(),
+                    part: block_part as u64,
+                    endpoint: self.block_storage_service.get_endpoint(),
+                },
+                checksum,
+            )
+            .await;
+
+        Ok(Response::new(UpdateBlockResponse {}))
     }
 
     async fn delete_block(

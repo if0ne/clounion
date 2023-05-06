@@ -15,12 +15,20 @@ service MainServerService {
   rpc get_large_file(GetLargeFileRequest) returns (LargeFileResponse);
 
   rpc delete_file(DeleteFileRequest) returns (EmptyResponse);
+
+  rpc add_checksum(AddChecksumRequest) returns (EmptyResponse);
 }
 
 message BlockInfo {
   bytes block_id = 1;
   uint64 part = 2;
-  repeated string endpoint = 3;
+  string endpoint = 3;
+}
+
+message AddChecksumRequest {
+  string filename = 1;
+  BlockInfo block = 2;
+  uint32 checksum = 3;
 }
 
 message CreateFileRequest {

@@ -21,10 +21,6 @@ message Range {
   uint64 end = 2;
 }
 
-message UpdateBlockResponse {
-  uint32 checksum = 1;
-}
-
 message CreateBlocksRequest {
   uint64 count = 1;
 }
@@ -45,11 +41,15 @@ message ReadBlockResponse {
 }
 
 message UpdateBlockRequest {
-  bytes block_id = 1;
-  uint64 part = 2;
-  bytes data = 3;
-  Range range = 4;
-  uint32 hash = 5;
+  string filename = 1;
+  bytes block_id = 2;
+  uint64 part = 3;
+  bytes data = 4;
+  Range range = 5;
+  uint32 hash = 6;
+}
+
+message UpdateBlockResponse {
 }
 
 message DeleteBlockRequest {

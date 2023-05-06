@@ -1,3 +1,3 @@
-mod metadata_controller;
+pub mod metadata_controller;
 mod metadata_service;
 mod metadata_service_redis;
