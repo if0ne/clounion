@@ -2,10 +2,9 @@ use super::sequence::Sequence;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub enum Commits<T, Hash>
+pub enum Commits<T>
 where
     T: Serialize,
-    Hash: Serialize,
 {
-    Sequence(Sequence<T, Hash>),
+    Sequence(Sequence<T>),
 }

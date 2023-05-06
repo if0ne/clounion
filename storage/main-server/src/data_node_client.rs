@@ -35,24 +35,20 @@ impl DataNodeClient {
 
     pub async fn create_blocks(&self, count: usize) -> Result<CreateBlocksResponse, MetadataError> {
         if let Some(ref mut client) = *self.inner.write().await {
-            match client
+            return match client
                 .create_blocks(CreateBlocksRequest {
                     count: count as u64,
                 })
                 .await
             {
-                Ok(block) => {
-                    return Ok(block.into_inner());
-                }
-                Err(error) => {
-                    return Err(MetadataError::CreateBlocksResponseError(format!(
-                        "Error from data node while creating blocks"
-                    )));
-                }
-            }
+                Ok(block) => Ok(block.into_inner()),
+                Err(error) => Err(MetadataError::CreateBlocksResponseError(format!(
+                    "Error from data node while creating blocks"
+                ))),
+            };
         }
 
-        Err(MetadataError::CreateSmallFileError(format!(
+        Err(MetadataError::CreateFileError(format!(
             "No one of data nodes are connected"
         )))
     }

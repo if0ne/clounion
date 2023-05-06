@@ -885,6 +885,7 @@ dependencies = [
  "prost-types",
  "redis",
  "serde",
+ "serde_json",
  "shared",
  "smallvec",
  "sysinfo",

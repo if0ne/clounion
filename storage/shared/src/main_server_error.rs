@@ -4,8 +4,12 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum MetadataError {
-    CreateSmallFileError(String),
+    CreateFileError(String),
     CreateBlocksResponseError(String),
+    FileNotFoundError(String),
+    CannotAddBlockToLargeFileError(String),
+    TryingToGetSmallButItLarge(String),
+    TryingToGetLargeButItSmall(String),
 }
 
 impl Display for MetadataError {

@@ -3,6 +3,7 @@ use crate::storage_types::object::Object;
 use async_trait::async_trait;
 use serde::Serialize;
 use smallvec::SmallVec;
+use std::hash::Hash;
 use std::path::Path;
 use uuid::Uuid;
 use zerocopy::AsBytes;
@@ -17,34 +18,37 @@ pub trait MetadataService {
     async fn create_small_file<P: AsRef<Path> + Send>(
         &self,
         params: CreationParam<P>,
-    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+    ) -> MetadataResult<Object<Self::Dst>>;
 
     async fn create_large_file<P: AsRef<Path> + Send>(
         &self,
         params: CreationParam<P>,
-    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+    ) -> MetadataResult<Object<Self::Dst>>;
 
     async fn get_small_file<P: AsRef<Path> + Send>(
         &self,
         path: P,
-    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
-
-    async fn get_small_file_last_version<P: AsRef<Path> + Send>(
-        &self,
-        path: P,
-    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+    ) -> MetadataResult<Object<Self::Dst>>;
 
     async fn add_commit_to_small_file<P: AsRef<Path> + Send>(
         &self,
         path: P,
-    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+    ) -> MetadataResult<Object<Self::Dst>>;
 
     async fn get_large_file<P: AsRef<Path> + Send>(
         &self,
         path: P,
-    ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
+    ) -> MetadataResult<Object<Self::Dst>>;
 
     async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()>;
+
+    async fn add_checksum<P: AsRef<Path> + Send>(
+        &self,
+        path: P,
+        block_id: Uuid,
+        part: usize,
+        checksum: Self::Hash,
+    );
 }
 
 #[derive(Debug)]

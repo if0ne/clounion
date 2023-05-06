@@ -13,6 +13,7 @@ fast-str.workspace = true
 futures.workspace = true
 prost.workspace = true
 prost-types.workspace = true
+serde_json.workspace = true
 shared = { path = "../shared" }
 smallvec.workspace = true
 redis.workspace = true
