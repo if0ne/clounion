@@ -28,6 +28,7 @@ tracing-subscriber.workspace = true
 serde.workspace = true
 sysinfo.workspace = true
 uuid.workspace = true
+zerocopy.workspace = true
 
 [build-dependencies]
 tonic-build.workspace = true

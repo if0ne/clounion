@@ -1,8 +1,11 @@
 use super::metadata_service::{CreationParam, MetadataResult, MetadataService};
+use crate::config::Config;
 use crate::data_node_client::DataNodeClient;
 use crate::storage_types::commit_types::block::Block;
 use crate::storage_types::commit_types::commit::Commits;
+use crate::storage_types::commit_types::merkle_tree::MerkleTree;
 use crate::storage_types::commit_types::sequence::Sequence;
+use crate::storage_types::large_file::LargeFile;
 use crate::storage_types::object::{Object, ObjectVariant};
 use crate::storage_types::small_file::SmallFile;
 use async_trait::async_trait;
@@ -16,13 +19,19 @@ use uuid::Uuid;
 pub struct MetaServiceRedis {
     storage: redis::Client,
     data_node_client: DataNodeClient,
+    config: Config,
 }
 
 impl MetaServiceRedis {
-    pub async fn new(redis: redis::Client, data_node_client: DataNodeClient) -> Self {
+    pub async fn new(
+        redis: redis::Client,
+        data_node_client: DataNodeClient,
+        config: Config,
+    ) -> Self {
         Self {
             storage: redis,
             data_node_client,
+            config,
         }
     }
 }
@@ -36,16 +45,16 @@ impl MetadataService for MetaServiceRedis {
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst, Self::Hash>> {
-        let block = self.data_node_client.create_blocks(1).await?;
+        let response = self.data_node_client.create_blocks(1).await?;
         let object = Object::new(
             params.path.as_ref().to_string_lossy().into(),
             params.size,
             ObjectVariant::SmallFile(SmallFile {
                 commits: Commits::Sequence(Sequence {
                     seq: vec![Block {
-                        id: Uuid::from_slice(block.blocks[0].block_id.as_slice()).unwrap(/*Never panic*/),
+                        id: Uuid::from_slice(response.blocks[0].block_id.as_slice()).unwrap(/*Never panic*/),
                         part: 0,
-                        dst: block.endpoint,
+                        dst: response.endpoint,
                         replicas: vec![],
                         checksum: 0u32,
                     }],
@@ -65,9 +74,40 @@ impl MetadataService for MetaServiceRedis {
 
     async fn create_large_file<P: AsRef<Path> + Send>(
         &self,
-        path: CreationParam<P>,
+        params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst, Self::Hash>> {
-        todo!()
+        let block_count = params.size / self.config.block_size + 1;
+        let mut response = self.data_node_client.create_blocks(block_count).await?;
+        response.blocks.sort_by(|a, b| a.part.cmp(&b.part));
+
+        let blocks = response
+            .blocks
+            .iter()
+            .map(|el| Block {
+                id: Uuid::from_slice(el.block_id.as_slice()).unwrap(/*Never panic*/),
+                part: el.part as usize,
+                dst: response.endpoint.clone(),
+                replicas: vec![],
+                checksum: 0u32,
+            })
+            .collect();
+
+        let object = Object::new(
+            params.path.as_ref().to_string_lossy().into(),
+            params.size,
+            ObjectVariant::LargeFile(LargeFile {
+                parts: MerkleTree::build(blocks),
+            }),
+        );
+
+        let mut connection = self.storage.get_connection().unwrap();
+        let _: RedisResult<bool> = connection.json_set(
+            params.path.as_ref().to_string_lossy().to_string(),
+            "$",
+            &object,
+        );
+
+        Ok(object)
     }
 
     async fn get_small_file<P: AsRef<Path> + Send>(

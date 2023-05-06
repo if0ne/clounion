@@ -2,6 +2,7 @@ mod proto_main_server {
     tonic::include_proto!("main_server");
 }
 
+use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
 use crate::service::metadata_controller::proto_main_server::AddChecksumRequest;
 use proto_main_server::main_server_service_server::MainServerService;
 use proto_main_server::{
@@ -10,15 +11,12 @@ use proto_main_server::{
     GetSmallFileLastVersionRequest, GetSmallFileRequest, LargeFileResponse,
 };
 use tonic::{Request, Response, Status};
-use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
 
 pub struct MetadataController {}
 
 impl MetadataController {
     pub async fn new() -> MainServerServiceServer<Self> {
-        MainServerServiceServer::new(Self {
-
-        })
+        MainServerServiceServer::new(Self {})
     }
 }
 

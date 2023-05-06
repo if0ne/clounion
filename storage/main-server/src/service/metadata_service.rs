@@ -5,13 +5,14 @@ use serde::Serialize;
 use smallvec::SmallVec;
 use std::path::Path;
 use uuid::Uuid;
+use zerocopy::AsBytes;
 
 pub type MetadataResult<T> = Result<T, shared::main_server_error::MetadataError>;
 
 #[async_trait]
 pub trait MetadataService {
     type Dst: Serialize;
-    type Hash: Serialize;
+    type Hash: Serialize + Copy + AsBytes;
 
     async fn create_small_file<P: AsRef<Path> + Send>(
         &self,
@@ -20,7 +21,7 @@ pub trait MetadataService {
 
     async fn create_large_file<P: AsRef<Path> + Send>(
         &self,
-        path: CreationParam<P>,
+        params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst, Self::Hash>>;
 
     async fn get_small_file<P: AsRef<Path> + Send>(
