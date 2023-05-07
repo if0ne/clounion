@@ -9,7 +9,7 @@ use crate::storage_types::large_file::LargeFile;
 use crate::storage_types::object::{Object, ObjectVariant};
 use crate::storage_types::small_file::SmallFile;
 use async_trait::async_trait;
-use redis::{Commands, JsonCommands, RedisResult};
+use redis::{AsyncCommands, JsonAsyncCommands, RedisResult};
 use shared::main_server_error::MetadataError;
 use smallvec::SmallVec;
 use std::path::Path;
@@ -41,7 +41,7 @@ impl MetaServiceRedis {
 impl MetadataService for MetaServiceRedis {
     type Dst = String;
 
-    async fn create_small_file<P: AsRef<Path> + Send>(
+    async fn create_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst>> {
@@ -62,17 +62,19 @@ impl MetadataService for MetaServiceRedis {
             }),
         );
 
-        let mut connection = self.storage.get_connection().unwrap();
-        let _: RedisResult<bool> = connection.json_set(
-            params.path.as_ref().to_string_lossy().to_string(),
-            "$",
-            &object,
-        );
+        let mut connection = self.storage.get_async_connection().await.unwrap();
+        let _: RedisResult<bool> = connection
+            .json_set(
+                params.path.as_ref().to_string_lossy().to_string(),
+                "$",
+                &object,
+            )
+            .await;
 
         Ok(object)
     }
 
-    async fn create_large_file<P: AsRef<Path> + Send>(
+    async fn create_large_file<P: AsRef<Path> + Send  + Sync>(
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst>> {
@@ -100,24 +102,27 @@ impl MetadataService for MetaServiceRedis {
             }),
         );
 
-        let mut connection = self.storage.get_connection().unwrap();
-        let _: RedisResult<bool> = connection.json_set(
-            params.path.as_ref().to_string_lossy().to_string(),
-            ".",
-            &object,
-        );
+        let mut connection = self.storage.get_async_connection().await.unwrap();
+        let _: RedisResult<bool> = connection
+            .json_set(
+                params.path.as_ref().to_string_lossy().to_string(),
+                ".",
+                &object,
+            )
+            .await;
 
         Ok(object)
     }
 
-    async fn get_small_file<P: AsRef<Path> + Send>(
+    async fn get_small_file<P: AsRef<Path> + Send  + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>> {
-        let mut connection = self.storage.get_connection().unwrap();
+        let mut connection = self.storage.get_async_connection().await.unwrap();
 
-        let object: RedisResult<String> =
-            connection.json_get(path.as_ref().to_string_lossy().to_string(), ".");
+        let object: RedisResult<String> = connection
+            .json_get(path.as_ref().to_string_lossy().to_string(), ".")
+            .await;
 
         match object {
             Ok(object) => {
@@ -137,13 +142,14 @@ impl MetadataService for MetaServiceRedis {
         }
     }
 
-    async fn add_commit_to_small_file<P: AsRef<Path> + Send>(
+    async fn add_commit_to_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>> {
-        let mut connection = self.storage.get_connection().unwrap();
+        let mut connection = self.storage.get_async_connection().await.unwrap();
         let object: String = connection
             .json_get(path.as_ref().to_string_lossy().to_string(), ".")
+            .await
             .map_err(|err| {
                 MetadataError::FileNotFoundError(format!(
                     "{}",
@@ -172,13 +178,14 @@ impl MetadataService for MetaServiceRedis {
         };
     }
 
-    async fn get_large_file<P: AsRef<Path> + Send>(
+    async fn get_large_file<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>> {
-        let mut connection = self.storage.get_connection().unwrap();
-        let object: RedisResult<String> =
-            connection.json_get(path.as_ref().to_string_lossy().to_string(), ".");
+        let mut connection = self.storage.get_async_connection().await.unwrap();
+        let object: RedisResult<String> = connection
+            .json_get(path.as_ref().to_string_lossy().to_string(), ".")
+            .await;
 
         match object {
             Ok(object) => {
@@ -197,31 +204,35 @@ impl MetadataService for MetaServiceRedis {
         }
     }
 
-    async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()> {
-        let mut connection = self.storage.get_connection().unwrap();
-        let _: RedisResult<bool> = connection.del(path.as_ref().to_string_lossy().to_string());
+    async fn delete_object<P: AsRef<Path> + Send + Sync>(&self, path: P) -> MetadataResult<()> {
+        let mut connection = self.storage.get_async_connection().await.unwrap();
+        let _: RedisResult<bool> = connection
+            .del(path.as_ref().to_string_lossy().to_string())
+            .await;
 
         Ok(())
     }
 
-    async fn add_checksum<P: AsRef<Path> + Send>(
+    async fn add_checksum<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
         block_id: Uuid,
         part: usize,
         checksum: u32,
     ) {
-        let mut connection = self.storage.get_connection().unwrap();
-        let object: RedisResult<String> =
-            connection.json_get(path.as_ref().to_string_lossy().to_string(), ".");
+        let mut connection = self.storage.get_async_connection().await.unwrap();
+        let object: RedisResult<String> = connection
+            .json_get(path.as_ref().to_string_lossy().to_string(), ".")
+            .await;
 
         match object {
             Ok(object) => {
                 let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
                 object.update_block(block_id, part, checksum);
 
-                let _: RedisResult<bool> =
-                    connection.json_set(path.as_ref().to_string_lossy().to_string(), "$", &object);
+                let _: RedisResult<bool> = connection
+                    .json_set(path.as_ref().to_string_lossy().to_string(), "$", &object)
+                    .await;
             }
             Err(_) => (), /*TODO: Error Handle*/
         }

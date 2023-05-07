@@ -11,37 +11,37 @@ use zerocopy::AsBytes;
 pub type MetadataResult<T> = Result<T, shared::main_server_error::MetadataError>;
 
 #[async_trait]
-pub trait MetadataService: Send + Sync {
+pub trait MetadataService: Send + Sync + Sync {
     type Dst: Serialize;
 
-    async fn create_small_file<P: AsRef<Path> + Send>(
+    async fn create_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst>>;
 
-    async fn create_large_file<P: AsRef<Path> + Send>(
+    async fn create_large_file<P: AsRef<Path> + Send + Sync>(
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst>>;
 
-    async fn get_small_file<P: AsRef<Path> + Send>(
+    async fn get_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>>;
 
-    async fn add_commit_to_small_file<P: AsRef<Path> + Send>(
+    async fn add_commit_to_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>>;
 
-    async fn get_large_file<P: AsRef<Path> + Send>(
+    async fn get_large_file<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>>;
 
-    async fn delete_object<P: AsRef<Path> + Send>(&self, path: P) -> MetadataResult<()>;
+    async fn delete_object<P: AsRef<Path> + Send + Sync>(&self, path: P) -> MetadataResult<()>;
 
-    async fn add_checksum<P: AsRef<Path> + Send>(
+    async fn add_checksum<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
         block_id: Uuid,
@@ -59,3 +59,4 @@ pub struct CreationParam<P: AsRef<Path>> {
 }
 
 unsafe impl<P: AsRef<Path>> Send for CreationParam<P> {}
+unsafe impl<P: AsRef<Path>> Sync for CreationParam<P> {}
