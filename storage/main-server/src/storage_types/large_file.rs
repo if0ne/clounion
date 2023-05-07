@@ -9,7 +9,7 @@ pub struct LargeFile<T>
 where
     T: Serialize,
 {
-    pub(crate) parts: MerkleTree<T, u32>,
+    pub(crate) tree: MerkleTree<T, u32>,
 }
 
 impl<T> LargeFile<T>
@@ -17,6 +17,10 @@ where
     T: Serialize,
 {
     pub fn update_block(&mut self, block_id: Uuid, part: usize, checksum: u32) {
-        self.parts.update_block(block_id, part, checksum);
+        self.tree.update_block(block_id, part, checksum);
+    }
+
+    pub fn get_all_blocks(&self) -> &[Block<T, u32>] {
+        self.tree.leaves()
     }
 }

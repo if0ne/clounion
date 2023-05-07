@@ -84,7 +84,7 @@ impl MainServerService for MetadataController {
 
         if let ObjectVariant::LargeFile(file) = file.inner {
             let blocks = file
-                .parts
+                .tree
                 .leaves()
                 .iter()
                 .map(|el| BlockInfo {
@@ -181,7 +181,7 @@ impl MainServerService for MetadataController {
 
         if let ObjectVariant::LargeFile(file) = file.inner {
             let blocks = file
-                .parts
+                .tree
                 .leaves()
                 .iter()
                 .map(|el| BlockInfo {

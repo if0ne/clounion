@@ -31,4 +31,12 @@ where
             }
         }
     }
+
+    pub fn get_all_blocks(&self) -> &[Block<T, u32>] {
+        match self.commits {
+            Commits::Sequence(ref seq) => {
+                &seq.seq
+            }
+        }
+    }
 }

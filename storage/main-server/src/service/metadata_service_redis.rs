@@ -98,7 +98,7 @@ impl MetadataService for MetaServiceRedis {
             params.path.as_ref().to_string_lossy().into(),
             params.size,
             ObjectVariant::LargeFile(LargeFile {
-                parts: MerkleTree::build(blocks),
+                tree: MerkleTree::build(blocks),
             }),
         );
 
@@ -206,11 +206,34 @@ impl MetadataService for MetaServiceRedis {
 
     async fn delete_object<P: AsRef<Path> + Send + Sync>(&self, path: P) -> MetadataResult<()> {
         let mut connection = self.storage.get_async_connection().await.unwrap();
-        let _: RedisResult<bool> = connection
-            .del(path.as_ref().to_string_lossy().to_string())
+
+        let object: RedisResult<String> = connection
+            .json_get(path.as_ref().to_string_lossy().to_string(), ".")
             .await;
 
-        Ok(())
+        return match object {
+            Ok(object) => {
+                let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
+
+                let _: RedisResult<bool> = connection
+                    .del(path.as_ref().to_string_lossy().to_string())
+                    .await;
+
+                let blocks = object.get_all_blocks();
+
+                for block in blocks {
+                    if let Err(err) = self.data_node_client.delete_block(block.id, block.part).await {
+                        tracing::error!("{}", err);
+                    }
+                }
+
+                Ok(())
+            }
+            Err(_) => Err(MetadataError::FileNotFoundError(format!(
+                "{}",
+                path.as_ref().to_string_lossy().to_string()
+            ))),
+        };
     }
 
     async fn add_checksum<P: AsRef<Path> + Send + Sync>(

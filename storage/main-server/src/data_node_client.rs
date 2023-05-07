@@ -6,7 +6,7 @@ mod proto_registry {
     tonic::include_proto!("registry_main_server");
 }
 
-use crate::data_node_client::proto_data_node::{CreateBlocksRequest, CreateBlocksResponse};
+use crate::data_node_client::proto_data_node::{BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest, EmptyResponse};
 use crate::data_node_client::proto_registry::registry_data_node_service_server::RegistryDataNodeServiceServer;
 use proto_data_node::data_node_service_client::DataNodeServiceClient;
 use proto_registry::registry_data_node_service_server::RegistryDataNodeService;
@@ -17,6 +17,8 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
+use crate::storage_types::commit_types::block::Block;
 
 pub struct DataNodeClient {
     inner: RwLock<Option<DataNodeServiceClient<Channel>>>,
@@ -48,6 +50,28 @@ impl DataNodeClient {
                     "Error from data node while creating blocks"
                 ))),
             };
+        }
+
+        Err(MetadataError::CreateFileError(format!(
+            "No one of data nodes are connected"
+        )))
+    }
+
+    pub async fn delete_block(&self, block_id: Uuid, part: usize) -> Result<(), MetadataError>  {
+        if let Some(ref mut client) = *self.inner.write().await {
+            match client
+                .delete_block(DeleteBlockRequest {
+                    block: Some(BlockInfo {
+                        block_id: block_id.as_bytes().to_vec(),
+                        part: part as u64,
+                    }),
+                })
+                .await {
+                Ok(_) => {}
+                Err(info) => {
+                    tracing::error!("Error to delete block: {:?}", info)
+                }
+            }
         }
 
         Err(MetadataError::CreateFileError(format!(
