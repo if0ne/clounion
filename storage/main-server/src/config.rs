@@ -14,6 +14,9 @@ pub struct Config {
     /// Block size
     #[arg(short, long)]
     pub(crate) block_size: usize,
+    /// Connection string for database
+    #[arg(short, long)]
+    pub(crate) database_connection: String,
 }
 
 impl Config {

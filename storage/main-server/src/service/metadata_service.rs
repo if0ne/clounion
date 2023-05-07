@@ -11,9 +11,8 @@ use zerocopy::AsBytes;
 pub type MetadataResult<T> = Result<T, shared::main_server_error::MetadataError>;
 
 #[async_trait]
-pub trait MetadataService {
+pub trait MetadataService: Send + Sync {
     type Dst: Serialize;
-    type Hash: Serialize + Copy + AsBytes;
 
     async fn create_small_file<P: AsRef<Path> + Send>(
         &self,
@@ -47,7 +46,7 @@ pub trait MetadataService {
         path: P,
         block_id: Uuid,
         part: usize,
-        checksum: Self::Hash,
+        checksum: u32,
     );
 }
 

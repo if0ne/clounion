@@ -3,7 +3,7 @@ use serde::Deserialize;
 use std::path::Path;
 use tokio::io::AsyncReadExt;
 
-#[derive(Deserialize, Parser)]
+#[derive(Clone, Deserialize, Parser)]
 pub struct Config {
     /// Address of main server
     #[arg(short, long)]

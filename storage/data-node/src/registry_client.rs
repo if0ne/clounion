@@ -29,7 +29,7 @@ impl RegistryClient {
         let response = self
             .inner
             .registry(RegistryRequest {
-                data_node_address: config.self_address.clone(),
+                data_node_address: format!("{}:{}", config.self_address, config.port),
                 block_size: config.block_size as u64,
             })
             .await;

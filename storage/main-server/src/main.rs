@@ -1,9 +1,12 @@
 use crate::config::Config;
+use crate::data_node_client::DataNodeClient;
 use crate::service::metadata_controller::MetadataController;
+use crate::service::metadata_service_redis::MetaServiceRedis;
 use crate::storage_types::commit_types::block::Block;
 use crate::storage_types::commit_types::merkle_tree::MerkleTree;
 use std::net::SocketAddr;
-use tonic::transport::Server;
+use std::sync::Arc;
+use tonic::transport::{Endpoint, Server};
 use uuid::Uuid;
 
 mod config;
@@ -25,12 +28,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Unable to parse socket address");
 
     let (_, health_service) = tonic_health::server::health_reporter();
-    let metadata_service = MetadataController::new().await;
 
+    let data_node_client = Arc::new(DataNodeClient::new().await);
+    let metadata_service_redis = {
+        let redis = redis::Client::open(config.database_connection.clone()).unwrap();
+        MetaServiceRedis::new(redis, data_node_client.clone(), config).await
+    };
+    let metadata_service = MetadataController::new(metadata_service_redis).await;
+
+    tracing::info!("Starting server on {}:{}", addr.ip(), addr.port());
     Server::builder()
         .accept_http1(true)
         .add_service(health_service)
         .add_service(metadata_service)
+        .add_service(data_node_client.get_service())
         .serve(addr)
         .await?;
 

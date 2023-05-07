@@ -6,6 +6,7 @@ mod proto_registry {
     tonic::include_proto!("registry_main_server");
 }
 
+use std::sync::Arc;
 use crate::data_node_client::proto_data_node::{CreateBlocksRequest, CreateBlocksResponse};
 use proto_data_node::data_node_service_client::DataNodeServiceClient;
 use proto_registry::registry_data_node_service_server::RegistryDataNodeService;
@@ -15,6 +16,7 @@ use shared::main_server_error::MetadataError;
 use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 use tonic::{Request, Response, Status};
+use crate::data_node_client::proto_registry::registry_data_node_service_server::RegistryDataNodeServiceServer;
 
 pub struct DataNodeClient {
     inner: RwLock<Option<DataNodeServiceClient<Channel>>>,
@@ -23,14 +25,14 @@ pub struct DataNodeClient {
 
 impl DataNodeClient {
     pub async fn new() -> Self {
-        /// TODO: Переделать
-        let client = DataNodeServiceClient::connect("http://[::1]:40000")
-            .await
-            .unwrap();
         Self {
-            inner: RwLock::new(Some(client)),
+            inner: RwLock::new(None),
             data_nodes: RwLock::new(vec![]),
         }
+    }
+
+    pub fn get_service(self: Arc<Self>) -> RegistryDataNodeServiceServer<Self> {
+        RegistryDataNodeServiceServer::from_arc(self.clone())
     }
 
     pub async fn create_blocks(&self, count: usize) -> Result<CreateBlocksResponse, MetadataError> {
@@ -60,6 +62,18 @@ impl RegistryDataNodeService for DataNodeClient {
         &self,
         request: Request<RegistryRequest>,
     ) -> Result<Response<RegistryResponse>, Status> {
+        /// TODO: Переделать
+        let request = request.into_inner();
+        tracing::info!("Connecting {}", request.data_node_address);
+
+        let endpoint = Endpoint::try_from(format!("http://{}", request.data_node_address)).unwrap();
+        let channel = endpoint.connect().await.unwrap();
+        let client = DataNodeServiceClient::new(channel);
+
+        *self.inner.write().await = Some(client);
+
+        tracing::info!("Connected {}", request.data_node_address);
+
         /*let request = request.into_inner();
 
         let mut writer = self.data_nodes.write().await;

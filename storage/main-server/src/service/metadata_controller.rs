@@ -4,19 +4,29 @@ mod proto_main_server {
 
 use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
 use crate::service::metadata_controller::proto_main_server::AddChecksumRequest;
+use crate::service::metadata_service::{CreationParam, MetadataService};
+use crate::service::metadata_service_redis::MetaServiceRedis;
+use crate::storage_types::object::ObjectVariant;
 use proto_main_server::main_server_service_server::MainServerService;
 use proto_main_server::{
     AddCommitSmallFileRequest, BlockInfo, CreateFileRequest, CreateLargeFileResponse,
     CreateSmallFileResponse, DeleteFileRequest, EmptyResponse, GetLargeFileRequest,
     GetSmallFileLastVersionRequest, GetSmallFileRequest, LargeFileResponse,
 };
+use shared::main_server_error::MetadataError;
+use smallvec::SmallVec;
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 
-pub struct MetadataController {}
+pub struct MetadataController {
+    metadata_service: MetaServiceRedis,
+}
 
 impl MetadataController {
-    pub async fn new() -> MainServerServiceServer<Self> {
-        MainServerServiceServer::new(Self {})
+    pub async fn new(service: MetaServiceRedis) -> MainServerServiceServer<Self> {
+        MainServerServiceServer::new(Self {
+            metadata_service: service,
+        })
     }
 }
 
@@ -26,7 +36,32 @@ impl MainServerService for MetadataController {
         &self,
         request: Request<CreateFileRequest>,
     ) -> Result<Response<CreateSmallFileResponse>, Status> {
-        todo!()
+        let request = request.into_inner();
+        let user_id = Uuid::from_slice(&request.user_id)
+            .map_err(|_| MetadataError::WrongUuid(format!("{:?}", &request.user_id)))?;
+
+        let file = self
+            .metadata_service
+            .create_small_file(CreationParam {
+                user_id,
+                group_id: SmallVec::new(),
+                path: request.filename,
+                size: request.size as usize,
+            })
+            .await?;
+
+        if let ObjectVariant::SmallFile(file) = file.inner {
+            let block = file.commits.last();
+            Ok(Response::new(CreateSmallFileResponse {
+                block: Some(BlockInfo {
+                    block_id: block.id.as_bytes().to_vec(),
+                    part: block.part as u64,
+                    endpoint: block.dst.clone(),
+                }),
+            }))
+        } else {
+            unreachable!()
+        }
     }
 
     async fn create_large_file(

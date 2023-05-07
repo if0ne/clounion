@@ -13,19 +13,20 @@ use redis::{Commands, JsonCommands, RedisResult};
 use shared::main_server_error::MetadataError;
 use smallvec::SmallVec;
 use std::path::Path;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct MetaServiceRedis {
     storage: redis::Client,
-    data_node_client: DataNodeClient,
+    data_node_client: Arc<DataNodeClient>,
     config: Config,
 }
 
 impl MetaServiceRedis {
     pub async fn new(
         redis: redis::Client,
-        data_node_client: DataNodeClient,
+        data_node_client: Arc<DataNodeClient>,
         config: Config,
     ) -> Self {
         Self {
@@ -39,7 +40,6 @@ impl MetaServiceRedis {
 #[async_trait]
 impl MetadataService for MetaServiceRedis {
     type Dst = String;
-    type Hash = u32;
 
     async fn create_small_file<P: AsRef<Path> + Send>(
         &self,
@@ -153,10 +153,9 @@ impl MetadataService for MetaServiceRedis {
 
         let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
         return match object.inner {
-            ObjectVariant::LargeFile(_) => Err(MetadataError::CannotAddBlockToLargeFileError(format!(
-                "{}",
-                path.as_ref().to_string_lossy().to_string()
-            ))),
+            ObjectVariant::LargeFile(_) => Err(MetadataError::CannotAddBlockToLargeFileError(
+                format!("{}", path.as_ref().to_string_lossy().to_string()),
+            )),
             ObjectVariant::SmallFile(ref mut file) => {
                 let response = self.data_node_client.create_blocks(1).await?;
                 let block = &response.blocks[0];
@@ -210,7 +209,7 @@ impl MetadataService for MetaServiceRedis {
         path: P,
         block_id: Uuid,
         part: usize,
-        checksum: Self::Hash,
+        checksum: u32,
     ) {
         let mut connection = self.storage.get_connection().unwrap();
         let object: RedisResult<String> =
@@ -221,13 +220,10 @@ impl MetadataService for MetaServiceRedis {
                 let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
                 object.update_block(block_id, part, checksum);
 
-                let _: RedisResult<bool> = connection.json_set(
-                    path.as_ref().to_string_lossy().to_string(),
-                    "$",
-                    &object,
-                );
+                let _: RedisResult<bool> =
+                    connection.json_set(path.as_ref().to_string_lossy().to_string(), "$", &object);
             }
-            Err(_) => () /*TODO: Error Handle*/
+            Err(_) => (), /*TODO: Error Handle*/
         }
     }
 }
