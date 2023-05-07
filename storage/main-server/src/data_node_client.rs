@@ -6,17 +6,17 @@ mod proto_registry {
     tonic::include_proto!("registry_main_server");
 }
 
-use std::sync::Arc;
 use crate::data_node_client::proto_data_node::{CreateBlocksRequest, CreateBlocksResponse};
+use crate::data_node_client::proto_registry::registry_data_node_service_server::RegistryDataNodeServiceServer;
 use proto_data_node::data_node_service_client::DataNodeServiceClient;
 use proto_registry::registry_data_node_service_server::RegistryDataNodeService;
 use proto_registry::{RegistryRequest, RegistryResponse};
 use shared::data_node_error::DataNodeError;
 use shared::main_server_error::MetadataError;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 use tonic::{Request, Response, Status};
-use crate::data_node_client::proto_registry::registry_data_node_service_server::RegistryDataNodeServiceServer;
 
 pub struct DataNodeClient {
     inner: RwLock<Option<DataNodeServiceClient<Channel>>>,

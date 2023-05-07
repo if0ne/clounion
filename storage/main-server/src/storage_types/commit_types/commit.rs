@@ -19,4 +19,10 @@ where
             Commits::Sequence(seq) => seq.seq.last().unwrap(),
         };
     }
+
+    pub fn index(&self, index: usize) -> &Block<T, u32> {
+        return match self {
+            Commits::Sequence(seq) => &seq.seq[index],
+        };
+    }
 }

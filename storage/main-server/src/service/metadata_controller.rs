@@ -68,48 +68,164 @@ impl MainServerService for MetadataController {
         &self,
         request: Request<CreateFileRequest>,
     ) -> Result<Response<CreateLargeFileResponse>, Status> {
-        todo!()
+        let request = request.into_inner();
+        let user_id = Uuid::from_slice(&request.user_id)
+            .map_err(|_| MetadataError::WrongUuid(format!("{:?}", &request.user_id)))?;
+
+        let file = self
+            .metadata_service
+            .create_large_file(CreationParam {
+                user_id,
+                group_id: SmallVec::new(),
+                path: request.filename,
+                size: request.size as usize,
+            })
+            .await?;
+
+        if let ObjectVariant::LargeFile(file) = file.inner {
+            let blocks = file
+                .parts
+                .leaves()
+                .iter()
+                .map(|el| BlockInfo {
+                    block_id: el.id.as_bytes().to_vec(),
+                    part: el.part as u64,
+                    endpoint: el.dst.clone(),
+                })
+                .collect();
+
+            Ok(Response::new(CreateLargeFileResponse { blocks }))
+        } else {
+            unreachable!()
+        }
     }
 
     async fn get_small_file(
         &self,
         request: Request<GetSmallFileRequest>,
     ) -> Result<Response<BlockInfo>, Status> {
-        todo!()
+        let request = request.into_inner();
+        let file = self
+            .metadata_service
+            .get_small_file(request.filename)
+            .await?;
+
+        if let ObjectVariant::SmallFile(file) = file.inner {
+            let block = file.commits.index(request.index as usize);
+            Ok(Response::new(BlockInfo {
+                block_id: block.id.as_bytes().to_vec(),
+                part: block.part as u64,
+                endpoint: block.dst.clone(),
+            }))
+        } else {
+            unreachable!()
+        }
     }
 
     async fn get_last_version_small_file(
         &self,
         request: Request<GetSmallFileLastVersionRequest>,
     ) -> Result<Response<BlockInfo>, Status> {
-        todo!()
+        let request = request.into_inner();
+
+        let file = self
+            .metadata_service
+            .get_small_file(request.filename)
+            .await?;
+
+        if let ObjectVariant::SmallFile(file) = file.inner {
+            let block = file.commits.last();
+            Ok(Response::new(BlockInfo {
+                block_id: block.id.as_bytes().to_vec(),
+                part: block.part as u64,
+                endpoint: block.dst.clone(),
+            }))
+        } else {
+            unreachable!()
+        }
     }
 
     async fn add_commit_to_small_file(
         &self,
         request: Request<AddCommitSmallFileRequest>,
     ) -> Result<Response<BlockInfo>, Status> {
-        todo!()
+        let request = request.into_inner();
+
+        let file = self
+            .metadata_service
+            .add_commit_to_small_file(request.filename)
+            .await?;
+
+        if let ObjectVariant::SmallFile(file) = file.inner {
+            let block = file.commits.last();
+            Ok(Response::new(BlockInfo {
+                block_id: block.id.as_bytes().to_vec(),
+                part: block.part as u64,
+                endpoint: block.dst.clone(),
+            }))
+        } else {
+            unreachable!()
+        }
     }
 
     async fn get_large_file(
         &self,
         request: Request<GetLargeFileRequest>,
     ) -> Result<Response<LargeFileResponse>, Status> {
-        todo!()
+        let request = request.into_inner();
+
+        let file = self
+            .metadata_service
+            .get_large_file(request.filename)
+            .await?;
+
+        if let ObjectVariant::LargeFile(file) = file.inner {
+            let blocks = file
+                .parts
+                .leaves()
+                .iter()
+                .map(|el| BlockInfo {
+                    block_id: el.id.as_bytes().to_vec(),
+                    part: el.part as u64,
+                    endpoint: el.dst.clone(),
+                })
+                .collect();
+
+            Ok(Response::new(LargeFileResponse { blocks }))
+        } else {
+            unreachable!()
+        }
     }
 
     async fn delete_file(
         &self,
         request: Request<DeleteFileRequest>,
     ) -> Result<Response<EmptyResponse>, Status> {
-        todo!()
+        let request = request.into_inner();
+
+        self.metadata_service
+            .delete_object(request.filename)
+            .await?;
+
+        Ok(Response::new(EmptyResponse {}))
     }
 
     async fn add_checksum(
         &self,
         request: Request<AddChecksumRequest>,
     ) -> Result<Response<EmptyResponse>, Status> {
-        todo!()
+        let request = request.into_inner();
+        let block = request.block.unwrap();
+
+        self.metadata_service
+            .add_checksum(
+                request.filename,
+                Uuid::from_slice(&block.block_id).unwrap(),
+                block.part as usize,
+                request.checksum,
+            )
+            .await;
+
+        Ok(Response::new(EmptyResponse {}))
     }
 }

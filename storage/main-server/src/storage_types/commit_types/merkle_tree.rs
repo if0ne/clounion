@@ -22,7 +22,7 @@ where
     Dst: Serialize,
     Hash: Serialize + Copy + AsBytes,
 {
-    leafs: Vec<Block<Dst, Hash>>,
+    leaves: Vec<Block<Dst, Hash>>,
     nodes: Vec<Vec<Node<Hash>>>,
 }
 
@@ -32,7 +32,7 @@ where
 {
     pub fn build(blocks: Vec<Block<Dst, u32>>) -> Self {
         let mut tree = Self {
-            leafs: blocks,
+            leaves: blocks,
             nodes: vec![],
         };
         tree.build_tree();
@@ -45,7 +45,7 @@ where
     }
 
     pub fn update_block(&mut self, block_id: Uuid, part: usize, checksum: u32) {
-        for block in self.leafs.iter_mut() {
+        for block in self.leaves.iter_mut() {
             if block.id == block_id && block.part == part {
                 block.checksum = checksum;
                 break;
@@ -55,12 +55,16 @@ where
         self.build_tree();
     }
 
+    pub fn leaves(&self) -> &[Block<Dst, u32>] {
+        &self.leaves
+    }
+
     fn build_tree(&mut self) {
         let mut offset = 0;
         let mut nodes = vec![];
 
         {
-            let chunks = self.leafs.chunks(2);
+            let chunks = self.leaves.chunks(2);
             let len = chunks.len();
             let mut inner_nodes = vec![];
 
