@@ -6,8 +6,11 @@ mod proto_registry {
     tonic::include_proto!("registry_main_server");
 }
 
-use crate::data_node_client::proto_data_node::{BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest, EmptyResponse};
+use crate::data_node_client::proto_data_node::{
+    BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest, EmptyResponse,
+};
 use crate::data_node_client::proto_registry::registry_data_node_service_server::RegistryDataNodeServiceServer;
+use crate::storage_types::commit_types::block::Block;
 use proto_data_node::data_node_service_client::DataNodeServiceClient;
 use proto_registry::registry_data_node_service_server::RegistryDataNodeService;
 use proto_registry::{RegistryRequest, RegistryResponse};
@@ -18,7 +21,6 @@ use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
-use crate::storage_types::commit_types::block::Block;
 
 pub struct DataNodeClient {
     inner: RwLock<Option<DataNodeServiceClient<Channel>>>,
@@ -57,7 +59,7 @@ impl DataNodeClient {
         )))
     }
 
-    pub async fn delete_block(&self, block_id: Uuid, part: usize) -> Result<(), MetadataError>  {
+    pub async fn delete_block(&self, block_id: Uuid, part: usize) -> Result<(), MetadataError> {
         if let Some(ref mut client) = *self.inner.write().await {
             match client
                 .delete_block(DeleteBlockRequest {
@@ -66,7 +68,8 @@ impl DataNodeClient {
                         part: part as u64,
                     }),
                 })
-                .await {
+                .await
+            {
                 Ok(_) => {}
                 Err(info) => {
                     tracing::error!("Error to delete block: {:?}", info)

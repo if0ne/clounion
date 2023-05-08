@@ -2,13 +2,19 @@ mod proto_main_server {
     tonic::include_proto!("main_server");
 }
 
+mod proto_main_server_api {
+    tonic::include_proto!("main_server_api");
+}
+
 use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
 use crate::service::metadata_controller::proto_main_server::AddChecksumRequest;
+use crate::service::metadata_controller::proto_main_server::EmptyResponse as EmptyResponseInternal;
+use crate::service::metadata_controller::proto_main_server_api::main_server_service_api_server::MainServerServiceApi;
 use crate::service::metadata_service::{CreationParam, MetadataService};
 use crate::service::metadata_service_redis::MetaServiceRedis;
 use crate::storage_types::object::ObjectVariant;
 use proto_main_server::main_server_service_server::MainServerService;
-use proto_main_server::{
+use proto_main_server_api::{
     AddCommitSmallFileRequest, BlockInfo, CreateFileRequest, CreateLargeFileResponse,
     CreateSmallFileResponse, DeleteFileRequest, EmptyResponse, GetLargeFileRequest,
     GetSmallFileLastVersionRequest, GetSmallFileRequest, LargeFileResponse,
@@ -31,7 +37,7 @@ impl MetadataController {
 }
 
 #[tonic::async_trait]
-impl MainServerService for MetadataController {
+impl MainServerServiceApi for MetadataController {
     async fn create_small_file(
         &self,
         request: Request<CreateFileRequest>,
@@ -209,11 +215,14 @@ impl MainServerService for MetadataController {
 
         Ok(Response::new(EmptyResponse {}))
     }
+}
 
+#[tonic::async_trait]
+impl MainServerService for MetadataController {
     async fn add_checksum(
         &self,
         request: Request<AddChecksumRequest>,
-    ) -> Result<Response<EmptyResponse>, Status> {
+    ) -> Result<Response<EmptyResponseInternal>, Status> {
         let request = request.into_inner();
         let block = request.block.unwrap();
 
@@ -226,6 +235,6 @@ impl MainServerService for MetadataController {
             )
             .await;
 
-        Ok(Response::new(EmptyResponse {}))
+        Ok(Response::new(EmptyResponseInternal {}))
     }
 }

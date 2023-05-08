@@ -74,7 +74,7 @@ impl MetadataService for MetaServiceRedis {
         Ok(object)
     }
 
-    async fn create_large_file<P: AsRef<Path> + Send  + Sync>(
+    async fn create_large_file<P: AsRef<Path> + Send + Sync>(
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst>> {
@@ -114,7 +114,7 @@ impl MetadataService for MetaServiceRedis {
         Ok(object)
     }
 
-    async fn get_small_file<P: AsRef<Path> + Send  + Sync>(
+    async fn get_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
     ) -> MetadataResult<Object<Self::Dst>> {
@@ -222,7 +222,11 @@ impl MetadataService for MetaServiceRedis {
                 let blocks = object.get_all_blocks();
 
                 for block in blocks {
-                    if let Err(err) = self.data_node_client.delete_block(block.id, block.part).await {
+                    if let Err(err) = self
+                        .data_node_client
+                        .delete_block(block.id, block.part)
+                        .await
+                    {
                         tracing::error!("{}", err);
                     }
                 }

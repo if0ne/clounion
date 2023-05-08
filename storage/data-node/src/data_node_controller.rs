@@ -2,11 +2,18 @@ mod proto_data_node {
     tonic::include_proto!("data_node");
 }
 
+mod proto_data_node_api {
+    tonic::include_proto!("data_node_api");
+}
+
 use crate::block_storage_service::BlockStorageService;
 use crate::data_node_controller::proto_data_node::{
     data_node_service_server::{DataNodeService, DataNodeServiceServer},
     BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest, EmptyResponse,
-    ReadBlockRequest, ReadBlockResponse, UpdateBlockRequest, UpdateBlockResponse,
+};
+use crate::data_node_controller::proto_data_node_api::{
+    data_node_service_api_server::DataNodeServiceApi, ReadBlockRequest, ReadBlockResponse,
+    UpdateBlockRequest, UpdateBlockResponse,
 };
 use crate::data_node_info::DataNodeInfo;
 use crate::main_server_client::MainServerClient;
@@ -58,6 +65,29 @@ impl DataNodeService for DataNodeController {
         }))
     }
 
+    async fn delete_block(
+        &self,
+        request: Request<DeleteBlockRequest>,
+    ) -> Result<Response<EmptyResponse>, Status> {
+        let inner = request.into_inner();
+
+        if let Some(block) = inner.block {
+            let uuid = Uuid::from_slice(&block.block_id)
+                .map_err(|_| DataNodeError::WrongUuid(format!("{:?}", &block.block_id)))?;
+            let part = block.part as usize;
+
+            self.block_storage_service.delete_block(uuid, part).await?;
+        } else {
+            tracing::error!("Block are null");
+            todo!("Return error")
+        }
+
+        Ok(Response::new(EmptyResponse {}))
+    }
+}
+
+#[tonic::async_trait]
+impl DataNodeServiceApi for DataNodeController {
     type ReadBlockStream = ReceiverStream<Result<ReadBlockResponse, Status>>;
 
     async fn read_block(
@@ -174,25 +204,5 @@ impl DataNodeService for DataNodeController {
             .await;
 
         Ok(Response::new(UpdateBlockResponse {}))
-    }
-
-    async fn delete_block(
-        &self,
-        request: Request<DeleteBlockRequest>,
-    ) -> Result<Response<EmptyResponse>, Status> {
-        let inner = request.into_inner();
-
-        if let Some(block) = inner.block {
-            let uuid = Uuid::from_slice(&block.block_id)
-                .map_err(|_| DataNodeError::WrongUuid(format!("{:?}", &block.block_id)))?;
-            let part = block.part as usize;
-
-            self.block_storage_service.delete_block(uuid, part).await?;
-        } else {
-            tracing::error!("Block are null");
-            todo!("Return error")
-        }
-
-        Ok(Response::new(EmptyResponse {}))
     }
 }
