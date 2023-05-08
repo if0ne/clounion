@@ -1446,6 +1446,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "storage-client"
+version = "0.1.0"
+dependencies = [
+ "clap 4.2.4",
+ "crc32fast",
+ "futures",
+ "prost",
+ "prost-types",
+ "redis",
+ "serde",
+ "serde_json",
+ "shared",
+ "smallvec",
+ "sysinfo",
+ "tokio",
+ "tokio-stream",
+ "toml",
+ "tonic",
+ "tonic-build",
+ "tonic-web",
+ "tower",
+ "uuid",
+ "zerocopy",
+]
+
+[[package]]
 name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

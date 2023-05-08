@@ -11,6 +11,7 @@ use crate::data_node_controller::proto_data_node::{
     data_node_service_server::{DataNodeService, DataNodeServiceServer},
     BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest, EmptyResponse,
 };
+use crate::data_node_controller::proto_data_node_api::data_node_service_api_server::DataNodeServiceApiServer;
 use crate::data_node_controller::proto_data_node_api::{
     data_node_service_api_server::DataNodeServiceApi, ReadBlockRequest, ReadBlockResponse,
     UpdateBlockRequest, UpdateBlockResponse,
@@ -26,20 +27,26 @@ use uuid::Uuid;
 
 pub struct DataNodeController {
     block_storage_service: Arc<BlockStorageService>,
-    main_server_client: MainServerClient,
+    main_server_client: Arc<MainServerClient>,
 }
 
 impl DataNodeController {
     pub async fn get_service(
         data_node_info: DataNodeInfo,
-        main_server_client: MainServerClient,
-    ) -> std::io::Result<DataNodeServiceServer<Self>> {
-        let block_storage_service = BlockStorageService::new(data_node_info).await?;
+        main_server_client: Arc<MainServerClient>,
+    ) -> std::io::Result<(DataNodeServiceServer<Self>, DataNodeServiceApiServer<Self>)> {
+        let block_storage_service = Arc::new(BlockStorageService::new(data_node_info).await?);
 
-        Ok(DataNodeServiceServer::new(Self {
-            block_storage_service: Arc::new(block_storage_service),
-            main_server_client,
-        }))
+        Ok((
+            DataNodeServiceServer::new(Self {
+                block_storage_service: block_storage_service.clone(),
+                main_server_client: main_server_client.clone(),
+            }),
+            DataNodeServiceApiServer::new(Self {
+                block_storage_service: block_storage_service.clone(),
+                main_server_client: main_server_client.clone(),
+            }),
+        ))
     }
 }
 

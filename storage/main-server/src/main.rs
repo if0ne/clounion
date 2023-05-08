@@ -34,13 +34,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let redis = redis::Client::open(config.database_connection.clone()).unwrap();
         MetaServiceRedis::new(redis, data_node_client.clone(), config).await
     };
-    let metadata_service = MetadataController::new(metadata_service_redis).await;
+    let (metadata_service, metadata_service_api) =
+        MetadataController::new(Arc::new(metadata_service_redis)).await;
 
     tracing::info!("Starting server on {}:{}", addr.ip(), addr.port());
     Server::builder()
         .accept_http1(true)
         .add_service(health_service)
         .add_service(metadata_service)
+        .add_service(metadata_service_api)
         .add_service(data_node_client.get_service())
         .serve(addr)
         .await?;

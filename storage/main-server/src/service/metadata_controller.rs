@@ -9,7 +9,9 @@ mod proto_main_server_api {
 use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
 use crate::service::metadata_controller::proto_main_server::AddChecksumRequest;
 use crate::service::metadata_controller::proto_main_server::EmptyResponse as EmptyResponseInternal;
-use crate::service::metadata_controller::proto_main_server_api::main_server_service_api_server::MainServerServiceApi;
+use crate::service::metadata_controller::proto_main_server_api::main_server_service_api_server::{
+    MainServerServiceApi, MainServerServiceApiServer,
+};
 use crate::service::metadata_service::{CreationParam, MetadataService};
 use crate::service::metadata_service_redis::MetaServiceRedis;
 use crate::storage_types::object::ObjectVariant;
@@ -21,18 +23,29 @@ use proto_main_server_api::{
 };
 use shared::main_server_error::MetadataError;
 use smallvec::SmallVec;
+use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
 pub struct MetadataController {
-    metadata_service: MetaServiceRedis,
+    metadata_service: Arc<MetaServiceRedis>,
 }
 
 impl MetadataController {
-    pub async fn new(service: MetaServiceRedis) -> MainServerServiceServer<Self> {
-        MainServerServiceServer::new(Self {
-            metadata_service: service,
-        })
+    pub async fn new(
+        service: Arc<MetaServiceRedis>,
+    ) -> (
+        MainServerServiceServer<Self>,
+        MainServerServiceApiServer<Self>,
+    ) {
+        (
+            MainServerServiceServer::new(Self {
+                metadata_service: service.clone(),
+            }),
+            MainServerServiceApiServer::new(Self {
+                metadata_service: service.clone(),
+            }),
+        )
     }
 }
 

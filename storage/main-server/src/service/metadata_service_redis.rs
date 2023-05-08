@@ -66,7 +66,7 @@ impl MetadataService for MetaServiceRedis {
         let _: RedisResult<bool> = connection
             .json_set(
                 params.path.as_ref().to_string_lossy().to_string(),
-                "$",
+                ".",
                 &object,
             )
             .await;
@@ -172,6 +172,10 @@ impl MetadataService for MetaServiceRedis {
                     replicas: vec![],
                     checksum: 0u32,
                 });
+
+                let _: RedisResult<bool> = connection
+                    .json_set(path.as_ref().to_string_lossy().to_string(), ".", &object)
+                    .await;
 
                 Ok(object)
             }

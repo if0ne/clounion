@@ -4,6 +4,7 @@ use crate::data_node_info::DataNodeInfo;
 use crate::main_server_client::MainServerClient;
 use crate::registry_client::RegistryClient;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::thread;
 use tonic::transport::Server;
 
@@ -33,9 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Unable to parse socket address");
 
     let (_, health_service) = tonic_health::server::health_reporter();
-    let data_node = DataNodeController::get_service(data_node_info, main_server_client)
-        .await
-        .unwrap();
+    let (data_node, data_node_api) =
+        DataNodeController::get_service(data_node_info, Arc::new(main_server_client))
+            .await
+            .unwrap();
 
     tracing::info!("Starting server on {}:{}", addr.ip(), addr.port());
 
@@ -44,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .accept_http1(true)
             .add_service(health_service)
             .add_service(data_node)
+            .add_service(data_node_api)
             .serve(addr)
             .await
     });
