@@ -28,3 +28,10 @@ zerocopy.workspace = true
 
 [build-dependencies]
 tonic-build.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["async_tokio"] }
+
+[[bench]]
+name = "storage-benches"
+harness = false
