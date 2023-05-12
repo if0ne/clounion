@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package data_node;
+
+message EmptyResponse {}
+
+service DataNodeService {
+  rpc CreateBlocks(CreateBlocksRequest) returns (CreateBlocksResponse) {}
+  rpc DeleteBlock(DeleteBlockRequest) returns (EmptyResponse) {}
+}
+
+message BlockInfo {
+  bytes block_id = 1;
+  uint64 part = 2;
+}
+
+message Range {
+  uint64 start = 1;
+  uint64 end = 2;
+}
+
+message CreateBlocksRequest {
+  uint64 count = 1;
+}
+
+message CreateBlocksResponse {
+  repeated BlockInfo blocks = 1;
+  string endpoint = 2;
+}
+
+message DeleteBlockRequest {
+  BlockInfo block = 1;
+}
