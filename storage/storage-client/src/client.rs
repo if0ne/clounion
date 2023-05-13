@@ -18,6 +18,7 @@ mod proto_main_server_api {
     tonic::include_proto!("main_server_api");
 }
 
+#[derive(Debug)]
 pub enum ObjectType {
     SmallFile,
     LargeFile,

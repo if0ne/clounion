@@ -3,7 +3,9 @@ members = [
     "storage/main-server",
     "storage/data-node",
     "storage/shared",
-    "storage/storage-client"
+    "storage/storage-client",
+
+    "clounion-cli"
 ]
 
 [workspace.dependencies]

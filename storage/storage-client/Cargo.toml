@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
-crc32fast.worksapce = true
+crc32fast.workspace = true
 futures.workspace = true
 prost.workspace = true
 prost-types.workspace = true
