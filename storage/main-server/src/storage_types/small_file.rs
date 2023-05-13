@@ -1,10 +1,9 @@
 use super::commit_types::commit::Commits;
 use crate::storage_types::commit_types::block::Block;
-use fast_str::FastStr;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SmallFile<T>
 where
     T: Serialize,

@@ -29,8 +29,9 @@ fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench group");
     group.significance_level(0.1).sample_size(10);
 
-    group.bench_function("one_hundred_big_file_processing",|b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| one_hundred_big_file_processing());
+    group.bench_function("one_hundred_big_file_processing", |b| {
+        b.to_async(tokio::runtime::Runtime::new().unwrap())
+            .iter(|| one_hundred_big_file_processing());
     });
 }
 

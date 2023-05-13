@@ -43,8 +43,8 @@ impl DataNodeController {
                 main_server_client: main_server_client.clone(),
             }),
             DataNodeServiceApiServer::new(Self {
-                block_storage_service: block_storage_service.clone(),
-                main_server_client: main_server_client.clone(),
+                block_storage_service,
+                main_server_client,
             }),
         ))
     }

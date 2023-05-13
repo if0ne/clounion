@@ -3,16 +3,15 @@ use crate::storage_types::object::Object;
 use async_trait::async_trait;
 use serde::Serialize;
 use smallvec::SmallVec;
-use std::hash::Hash;
+use std::fmt::Debug;
 use std::path::Path;
 use uuid::Uuid;
-use zerocopy::AsBytes;
 
 pub type MetadataResult<T> = Result<T, shared::main_server_error::MetadataError>;
 
 #[async_trait]
 pub trait MetadataService: Send + Sync + Sync {
-    type Dst: Serialize;
+    type Dst: Serialize + Debug;
 
     async fn create_small_file<P: AsRef<Path> + Send + Sync>(
         &self,
@@ -48,6 +47,7 @@ pub trait MetadataService: Send + Sync + Sync {
         part: usize,
         checksum: u32,
     );
+    async fn get_files(&self, prefix: &str) -> Vec<Object<Self::Dst>>;
 }
 
 #[derive(Debug)]

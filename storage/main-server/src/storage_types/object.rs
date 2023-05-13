@@ -2,15 +2,14 @@ use super::large_file::LargeFile;
 use super::small_file::SmallFile;
 use crate::storage_types::commit_types::block::Block;
 use fast_str::FastStr;
-use redis::{FromRedisValue, RedisResult, Value};
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use uuid::Uuid;
-use zerocopy::AsBytes;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ObjectVariant<T>
 where
-    T: Serialize,
+    T: Serialize + Debug,
 {
     LargeFile(LargeFile<T>),
     SmallFile(SmallFile<T>),
@@ -18,7 +17,7 @@ where
 
 impl<T> ObjectVariant<T>
 where
-    T: Serialize,
+    T: Serialize + Debug,
 {
     pub fn update_block(&mut self, block_id: Uuid, part: usize, checksum: u32) {
         match self {
@@ -32,10 +31,10 @@ where
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Object<T>
 where
-    T: Serialize,
+    T: Serialize + Debug,
 {
     pub(crate) name: FastStr,
     pub(crate) size: usize,
@@ -44,7 +43,7 @@ where
 
 impl<T> Object<T>
 where
-    T: Serialize,
+    T: Serialize + Debug,
 {
     pub fn new(name: FastStr, size: usize, inner: ObjectVariant<T>) -> Self {
         Self { name, size, inner }

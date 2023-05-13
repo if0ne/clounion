@@ -11,10 +11,8 @@ use crate::storage_types::small_file::SmallFile;
 use async_trait::async_trait;
 use redis::{AsyncCommands, JsonAsyncCommands, RedisResult};
 use shared::main_server_error::MetadataError;
-use smallvec::SmallVec;
 use std::path::Path;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct MetaServiceRedis {
@@ -126,19 +124,18 @@ impl MetadataService for MetaServiceRedis {
 
         match object {
             Ok(object) => {
-                let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
+                let object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
 
                 return match object.inner {
                     ObjectVariant::LargeFile(_) => Err(MetadataError::TryingToGetSmallButItLarge(
-                        format!("{}", path.as_ref().to_string_lossy().to_string()),
+                        path.as_ref().to_string_lossy().to_string(),
                     )),
                     ObjectVariant::SmallFile(_) => Ok(object),
                 };
             }
-            Err(_) => Err(MetadataError::FileNotFoundError(format!(
-                "{}",
-                path.as_ref().to_string_lossy().to_string()
-            ))),
+            Err(_) => Err(MetadataError::FileNotFoundError(
+                path.as_ref().to_string_lossy().to_string(),
+            )),
         }
     }
 
@@ -150,17 +147,14 @@ impl MetadataService for MetaServiceRedis {
         let object: String = connection
             .json_get(path.as_ref().to_string_lossy().to_string(), ".")
             .await
-            .map_err(|err| {
-                MetadataError::FileNotFoundError(format!(
-                    "{}",
-                    path.as_ref().to_string_lossy().to_string()
-                ))
+            .map_err(|_| {
+                MetadataError::FileNotFoundError(path.as_ref().to_string_lossy().to_string())
             })?;
 
         let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
         return match object.inner {
             ObjectVariant::LargeFile(_) => Err(MetadataError::CannotAddBlockToLargeFileError(
-                format!("{}", path.as_ref().to_string_lossy().to_string()),
+                path.as_ref().to_string_lossy().to_string(),
             )),
             ObjectVariant::SmallFile(ref mut file) => {
                 let response = self.data_node_client.create_blocks(1).await?;
@@ -193,18 +187,17 @@ impl MetadataService for MetaServiceRedis {
 
         match object {
             Ok(object) => {
-                let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
+                let object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
                 return match object.inner {
                     ObjectVariant::LargeFile(_) => Ok(object),
                     ObjectVariant::SmallFile(_) => Err(MetadataError::TryingToGetLargeButItSmall(
-                        format!("{}", path.as_ref().to_string_lossy().to_string()),
+                        path.as_ref().to_string_lossy().to_string(),
                     )),
                 };
             }
-            Err(_) => Err(MetadataError::FileNotFoundError(format!(
-                "{}",
-                path.as_ref().to_string_lossy().to_string()
-            ))),
+            Err(_) => Err(MetadataError::FileNotFoundError(
+                path.as_ref().to_string_lossy().to_string(),
+            )),
         }
     }
 
@@ -217,7 +210,7 @@ impl MetadataService for MetaServiceRedis {
 
         return match object {
             Ok(object) => {
-                let mut object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
+                let object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
 
                 let _: RedisResult<bool> = connection
                     .del(path.as_ref().to_string_lossy().to_string())
@@ -237,13 +230,13 @@ impl MetadataService for MetaServiceRedis {
 
                 Ok(())
             }
-            Err(_) => Err(MetadataError::FileNotFoundError(format!(
-                "{}",
-                path.as_ref().to_string_lossy().to_string()
-            ))),
+            Err(_) => Err(MetadataError::FileNotFoundError(
+                path.as_ref().to_string_lossy().to_string(),
+            )),
         };
     }
 
+    #[allow(clippy::single_match)]
     async fn add_checksum<P: AsRef<Path> + Send + Sync>(
         &self,
         path: P,
@@ -267,5 +260,27 @@ impl MetadataService for MetaServiceRedis {
             }
             Err(_) => (), /*TODO: Error Handle*/
         }
+    }
+
+    async fn get_files(&self, prefix: &str) -> Vec<Object<Self::Dst>> {
+        let mut connection = self.storage.get_async_connection().await.unwrap();
+        let keys: Vec<String> = connection.keys(format!("{}*", prefix)).await.unwrap();
+
+        let mut files = vec![];
+
+        for key in keys {
+            let object: RedisResult<String> = connection.json_get(key, ".").await;
+
+            match object {
+                Ok(object) => {
+                    let object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
+                    println!("{:?}", object);
+                    files.push(object);
+                }
+                Err(_) => todo!(), /*TODO: Handle error*/
+            }
+        }
+
+        files
     }
 }

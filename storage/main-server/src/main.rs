@@ -2,12 +2,9 @@ use crate::config::Config;
 use crate::data_node_client::DataNodeClient;
 use crate::service::metadata_controller::MetadataController;
 use crate::service::metadata_service_redis::MetaServiceRedis;
-use crate::storage_types::commit_types::block::Block;
-use crate::storage_types::commit_types::merkle_tree::MerkleTree;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tonic::transport::{Endpoint, Server};
-use uuid::Uuid;
+use tonic::transport::Server;
 
 mod config;
 mod constants;

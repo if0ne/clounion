@@ -4,6 +4,11 @@ package main_server_api;
 
 message EmptyResponse {}
 
+enum ObjectType {
+  SmallFile = 0;
+  LargeFile = 1;
+}
+
 service MainServerServiceApi {
   rpc create_small_file(CreateFileRequest) returns (CreateSmallFileResponse);
   rpc create_large_file(CreateFileRequest) returns (CreateLargeFileResponse);
@@ -15,12 +20,27 @@ service MainServerServiceApi {
   rpc get_large_file(GetLargeFileRequest) returns (LargeFileResponse);
 
   rpc delete_file(DeleteFileRequest) returns (EmptyResponse);
+
+  rpc get_files(FileRequest) returns (FileResponse);
 }
 
 message BlockInfo {
   bytes block_id = 1;
   uint64 part = 2;
   string endpoint = 3;
+}
+
+message FileRequest {
+  string prefix = 1;
+}
+
+message ObjectResponse {
+  string filename = 1;
+  ObjectType type = 2;
+}
+
+message FileResponse {
+  repeated ObjectResponse files = 1;
 }
 
 message CreateFileRequest {

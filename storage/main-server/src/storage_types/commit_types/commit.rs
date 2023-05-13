@@ -2,7 +2,7 @@ use super::sequence::Sequence;
 use crate::storage_types::commit_types::block::Block;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Commits<T>
 where
     T: Serialize,
@@ -15,14 +15,14 @@ where
     T: Serialize,
 {
     pub fn last(&self) -> &Block<T, u32> {
-        return match self {
+        match self {
             Commits::Sequence(seq) => seq.seq.last().unwrap(),
-        };
+        }
     }
 
     pub fn index(&self, index: usize) -> &Block<T, u32> {
-        return match self {
+        match self {
             Commits::Sequence(seq) => &seq.seq[index],
-        };
+        }
     }
 }

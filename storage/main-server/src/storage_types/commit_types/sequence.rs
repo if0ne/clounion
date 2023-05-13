@@ -2,7 +2,7 @@ use super::block::Block;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sequence<T>
 where
     T: Serialize,

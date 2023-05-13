@@ -7,14 +7,12 @@ mod proto_registry {
 }
 
 use crate::data_node_client::proto_data_node::{
-    BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest, EmptyResponse,
+    BlockInfo, CreateBlocksRequest, CreateBlocksResponse, DeleteBlockRequest,
 };
 use crate::data_node_client::proto_registry::registry_data_node_service_server::RegistryDataNodeServiceServer;
-use crate::storage_types::commit_types::block::Block;
 use proto_data_node::data_node_service_client::DataNodeServiceClient;
 use proto_registry::registry_data_node_service_server::RegistryDataNodeService;
 use proto_registry::{RegistryRequest, RegistryResponse};
-use shared::data_node_error::DataNodeError;
 use shared::main_server_error::MetadataError;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -22,6 +20,7 @@ use tonic::transport::{Channel, Endpoint};
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
+#[allow(dead_code)]
 pub struct DataNodeClient {
     inner: RwLock<Option<DataNodeServiceClient<Channel>>>,
     data_nodes: RwLock<Vec<String>>,
@@ -36,7 +35,7 @@ impl DataNodeClient {
     }
 
     pub fn get_service(self: Arc<Self>) -> RegistryDataNodeServiceServer<Self> {
-        RegistryDataNodeServiceServer::from_arc(self.clone())
+        RegistryDataNodeServiceServer::from_arc(self)
     }
 
     pub async fn create_blocks(&self, count: usize) -> Result<CreateBlocksResponse, MetadataError> {
@@ -48,15 +47,15 @@ impl DataNodeClient {
                 .await
             {
                 Ok(block) => Ok(block.into_inner()),
-                Err(error) => Err(MetadataError::CreateBlocksResponseError(format!(
-                    "Error from data node while creating blocks"
-                ))),
+                Err(_) => Err(MetadataError::CreateBlocksResponseError(
+                    "Error from data node while creating blocks".to_string(),
+                )),
             };
         }
 
-        Err(MetadataError::CreateFileError(format!(
-            "No one of data nodes are connected"
-        )))
+        Err(MetadataError::CreateFileError(
+            "No one of data nodes are connected".to_string(),
+        ))
     }
 
     pub async fn delete_block(&self, block_id: Uuid, part: usize) -> Result<(), MetadataError> {
@@ -77,9 +76,9 @@ impl DataNodeClient {
             }
         }
 
-        Err(MetadataError::CreateFileError(format!(
-            "No one of data nodes are connected"
-        )))
+        Err(MetadataError::CreateFileError(
+            "No one of data nodes are connected".to_string(),
+        ))
     }
 }
 
@@ -89,7 +88,7 @@ impl RegistryDataNodeService for DataNodeClient {
         &self,
         request: Request<RegistryRequest>,
     ) -> Result<Response<RegistryResponse>, Status> {
-        /// TODO: Переделать
+        // TODO: Переделать
         let request = request.into_inner();
         tracing::info!("Connecting {}", request.data_node_address);
 

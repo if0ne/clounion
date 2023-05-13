@@ -6,20 +6,21 @@ mod proto_main_server_api {
     tonic::include_proto!("main_server_api");
 }
 
-use crate::service::metadata_controller::proto_main_server::main_server_service_server::MainServerServiceServer;
-use crate::service::metadata_controller::proto_main_server::AddChecksumRequest;
-use crate::service::metadata_controller::proto_main_server::EmptyResponse as EmptyResponseInternal;
-use crate::service::metadata_controller::proto_main_server_api::main_server_service_api_server::{
-    MainServerServiceApi, MainServerServiceApiServer,
-};
 use crate::service::metadata_service::{CreationParam, MetadataService};
 use crate::service::metadata_service_redis::MetaServiceRedis;
 use crate::storage_types::object::ObjectVariant;
 use proto_main_server::main_server_service_server::MainServerService;
+use proto_main_server::main_server_service_server::MainServerServiceServer;
+use proto_main_server::AddChecksumRequest;
+use proto_main_server::EmptyResponse as EmptyResponseInternal;
+use proto_main_server_api::main_server_service_api_server::{
+    MainServerServiceApi, MainServerServiceApiServer,
+};
 use proto_main_server_api::{
     AddCommitSmallFileRequest, BlockInfo, CreateFileRequest, CreateLargeFileResponse,
-    CreateSmallFileResponse, DeleteFileRequest, EmptyResponse, GetLargeFileRequest,
-    GetSmallFileLastVersionRequest, GetSmallFileRequest, LargeFileResponse,
+    CreateSmallFileResponse, DeleteFileRequest, EmptyResponse, FileRequest, FileResponse,
+    GetLargeFileRequest, GetSmallFileLastVersionRequest, GetSmallFileRequest, LargeFileResponse,
+    ObjectResponse,
 };
 use shared::main_server_error::MetadataError;
 use smallvec::SmallVec;
@@ -43,7 +44,7 @@ impl MetadataController {
                 metadata_service: service.clone(),
             }),
             MainServerServiceApiServer::new(Self {
-                metadata_service: service.clone(),
+                metadata_service: service,
             }),
         )
     }
@@ -227,6 +228,27 @@ impl MainServerServiceApi for MetadataController {
             .await?;
 
         Ok(Response::new(EmptyResponse {}))
+    }
+
+    async fn get_files(
+        &self,
+        request: Request<FileRequest>,
+    ) -> Result<Response<FileResponse>, Status> {
+        let request = request.into_inner();
+        let objects = self.metadata_service.get_files(&request.prefix).await;
+
+        let objects = objects
+            .into_iter()
+            .map(|el| ObjectResponse {
+                filename: el.name.to_string(),
+                r#type: match el.inner {
+                    ObjectVariant::SmallFile(_) => 0,
+                    ObjectVariant::LargeFile(_) => 1,
+                },
+            })
+            .collect();
+
+        Ok(Response::new(FileResponse { files: objects }))
     }
 }
 

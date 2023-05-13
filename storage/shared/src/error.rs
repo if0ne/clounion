@@ -23,8 +23,8 @@ impl std::fmt::Display for ConvertError {
 #[macro_export]
 macro_rules! impl_converter {
     ($error:ty) => {
-        use crate::error::ConvertError;
         use tonic::{Code, Status};
+        use $crate::error::ConvertError;
 
         const CUSTOM_ERROR: &str = "x-custom-tonic-error";
 

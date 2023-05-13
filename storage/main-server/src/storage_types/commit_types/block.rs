@@ -1,13 +1,13 @@
 use crate::constants::MAX_REPLICAS;
 use serde::{Deserialize, Serialize};
-use smallvec::SmallVec;
+use std::fmt::Debug;
 use uuid::Uuid;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Block<Dst, Hash>
 where
     Dst: Serialize,
-    Hash: Serialize,
+    Hash: Serialize + Debug,
 {
     pub(crate) id: Uuid,
     pub(crate) part: usize,

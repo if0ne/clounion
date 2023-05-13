@@ -2,8 +2,8 @@ use crate::client::proto_data_node_api::data_node_service_api_client::DataNodeSe
 use crate::client::proto_data_node_api::{Range, ReadBlockRequest, UpdateBlockRequest};
 use crate::client::proto_main_server_api::main_server_service_api_client::MainServerServiceApiClient;
 use crate::client::proto_main_server_api::{
-    AddCommitSmallFileRequest, CreateFileRequest, DeleteFileRequest, GetLargeFileRequest,
-    GetSmallFileLastVersionRequest,
+    AddCommitSmallFileRequest, CreateFileRequest, DeleteFileRequest, FileRequest,
+    GetLargeFileRequest, GetSmallFileLastVersionRequest,
 };
 use crate::config::Config;
 use futures::StreamExt;
@@ -16,6 +16,11 @@ mod proto_data_node_api {
 
 mod proto_main_server_api {
     tonic::include_proto!("main_server_api");
+}
+
+pub enum ObjectType {
+    SmallFile,
+    LargeFile,
 }
 
 pub struct StorageClient {
@@ -50,7 +55,7 @@ impl StorageClient {
                 size: file_size,
             })
             .await
-            .map_err(|e| StorageClientError::CreateFileError)?
+            .map_err(|_| StorageClientError::CreateFileError)?
             .into_inner();
 
         let block = remote_file.block.unwrap();
@@ -65,7 +70,7 @@ impl StorageClient {
         file.read_to_end(&mut buffer).await.unwrap();
 
         let update_info = UpdateBlockRequest {
-            filename: filename.to_string().clone(),
+            filename: filename.to_string(),
             block_id: block.block_id.clone(),
             part: block.part,
             range: Some(Range {
@@ -110,7 +115,7 @@ impl StorageClient {
                 size: file_size,
             })
             .await
-            .map_err(|e| StorageClientError::CreateFileError)?
+            .map_err(|_| StorageClientError::CreateFileError)?
             .into_inner();
 
         //TODO: Error handle
@@ -126,7 +131,7 @@ impl StorageClient {
             .map(move |(data, block)| {
                 (
                     UpdateBlockRequest {
-                        filename: filename.to_string().clone(),
+                        filename: filename.to_string(),
                         block_id: block.block_id.clone(),
                         part: block.part,
                         data: data.to_vec(),
@@ -179,7 +184,7 @@ impl StorageClient {
                 group_ids: vec![],
             })
             .await
-            .map_err(|e| StorageClientError::ReadSmallFileError)?
+            .map_err(|_| StorageClientError::ReadSmallFileError)?
             .into_inner();
 
         let mut data_node_client =
@@ -196,7 +201,7 @@ impl StorageClient {
             })
             .await;
 
-        return if let Ok(stream) = response {
+        if let Ok(stream) = response {
             let mut stream = stream.into_inner();
             while let Some(part) = stream.next().await {
                 if let Ok(part) = part {
@@ -209,7 +214,7 @@ impl StorageClient {
             Ok(data.into_iter().flatten().collect())
         } else {
             Err(StorageClientError::ReadSmallFileError)
-        };
+        }
     }
 
     pub async fn read_large_file(
@@ -231,7 +236,7 @@ impl StorageClient {
                 group_ids: vec![],
             })
             .await
-            .map_err(|e| StorageClientError::ReadSmallFileError)?
+            .map_err(|_| StorageClientError::ReadSmallFileError)?
             .into_inner();
 
         let count = remote_file.blocks.len();
@@ -267,7 +272,7 @@ impl StorageClient {
             }
         }
 
-        return Ok(data.into_iter().flatten().collect());
+        Ok(data.into_iter().flatten().collect())
     }
 
     pub async fn delete_file(
@@ -289,7 +294,7 @@ impl StorageClient {
                 group_ids: vec![],
             })
             .await
-            .map_err(|e| StorageClientError::DeleteFileError)?;
+            .map_err(|_| StorageClientError::DeleteFileError)?;
 
         Ok(())
     }
@@ -323,7 +328,7 @@ impl StorageClient {
                 .map_err(|_| StorageClientError::WrongDatanodeAddressError)?;
 
         let update_info = UpdateBlockRequest {
-            filename: filename.to_string().clone(),
+            filename: filename.to_string(),
             block_id: block.block_id.clone(),
             part: block.part,
             range: Some(Range {
@@ -343,6 +348,40 @@ impl StorageClient {
             .into_inner();
 
         Ok(())
+    }
+
+    pub async fn get_files(
+        &self,
+        prefix: &str,
+    ) -> Result<Vec<(String, ObjectType)>, StorageClientError> {
+        let mut main_server_client = MainServerServiceApiClient::connect(format!(
+            "http://{}",
+            self.config.main_server_address
+        ))
+        .await
+        .map_err(|_| StorageClientError::WrongMetadataAddressError)?;
+
+        let response = main_server_client
+            .get_files(FileRequest {
+                prefix: prefix.to_string(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .files;
+
+        Ok(response
+            .into_iter()
+            .map(|el| {
+                let ty = match el.r#type {
+                    0 => ObjectType::SmallFile,
+                    1 => ObjectType::LargeFile,
+                    _ => panic!(),
+                };
+
+                (el.filename, ty)
+            })
+            .collect())
     }
 }
 

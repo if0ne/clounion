@@ -1,12 +1,10 @@
 use crate::storage_types::commit_types::block::Block;
-use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use std::hash::Hash;
-use tokio::sync::RwLock;
+use std::fmt::Debug;
 use uuid::Uuid;
 use zerocopy::AsBytes;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Node<Hash>
 where
     Hash: Serialize + AsBytes + Copy,
@@ -16,11 +14,11 @@ where
     pub(crate) checksum: Hash,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MerkleTree<Dst, Hash>
 where
-    Dst: Serialize,
-    Hash: Serialize + Copy + AsBytes,
+    Dst: Serialize + Debug,
+    Hash: Serialize + Copy + AsBytes + Debug,
 {
     leaves: Vec<Block<Dst, Hash>>,
     nodes: Vec<Vec<Node<Hash>>>,
@@ -28,7 +26,7 @@ where
 
 impl<Dst> MerkleTree<Dst, u32>
 where
-    Dst: Serialize,
+    Dst: Serialize + Debug,
 {
     pub fn build(blocks: Vec<Block<Dst, u32>>) -> Self {
         let mut tree = Self {
@@ -40,6 +38,7 @@ where
         tree
     }
 
+    #[allow(dead_code)]
     pub fn root(&self) -> u32 {
         self.nodes.last().unwrap()[0].checksum
     }
@@ -75,7 +74,7 @@ where
                         let bytes = vec.as_bytes();
 
                         //TODO: Ломает всю абстракцию выбора хеша
-                        crc32fast::hash(&bytes)
+                        crc32fast::hash(bytes)
                     };
 
                     inner_nodes.push(Node {
@@ -108,7 +107,7 @@ where
                             let bytes = vec.as_bytes();
 
                             //TODO: Ломает всю абстракцию выбора хеша
-                            crc32fast::hash(&bytes)
+                            crc32fast::hash(bytes)
                         };
 
                         inner_nodes.push(Node {
