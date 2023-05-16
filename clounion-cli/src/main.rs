@@ -2,14 +2,12 @@ use std::io::Write;
 use storage_client::client::StorageClient;
 use storage_client::config::Config;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use uuid::Uuid;
 
 const PREFIX: &str = "co-cli > ";
 
 #[tokio::main]
 async fn main() {
     let client = StorageClient::new(Config::from_file("Client.toml").await.unwrap());
-    let uuid = Uuid::new_v4();
     let mut input = String::new();
 
     loop {
@@ -27,27 +25,36 @@ async fn main() {
                     .collect::<Vec<&str>>();
 
                 match args[0] {
+                    "help" => {
+                        println!("Список команд:");
+
+                        println!("\tls <prefix> - список файлов пользователя; ARGS: <prefix> - префикс названия файла для поиска");
+                        println!("\tul <-s/-l> <remote filename> <filename> - загрузка файла на сервер; ARGS: <-s> - маленький файл, <-l> - большой файл, <remote filename> - удаленное название файла, <filename> - название файла на локальной машине");
+                        println!("\tdl <-s/-l> <remote filename> <filename> - загрузка файла на локальную машину; ARGS: <-s> - маленький файл, <-l> - большой файл, <remote filename> - удаленное название файла, <filename> - название файла на локальной машине");
+                        println!("\tac <remote filename> <filename> - обновление файла маленького размера; ARGS: <remote filename> - удаленное название файла, <filename> - название файла на локальной машине");
+                        println!("\tdelete <remote filename> - удаление файла; ARGS:<remote filename> - удаленное название файла");
+                    }
                     "ls" => {
                         let prefix = if args.len() < 2 { "" } else { args[1] };
 
-                        println!("Getting list of files...");
+                        println!("Получаем список...");
                         let res = client.get_files(prefix).await;
 
                         match res {
                             Ok(files) => {
-                                println!("List: ");
+                                println!("Список файлов: ");
                                 for file in files {
-                                    println!("Filename: {} Type: {:?}", file.0, file.1);
+                                    println!("\tИмя файла: {} Тип: {:?}", file.0, file.1);
                                 }
                             }
                             Err(err) => {
-                                println!("Error: {:?}", err)
+                                println!("Ошибка: {:?}", err)
                             }
                         }
                     }
                     "ul" => {
                         if args.len() < 4 {
-                            println!("Enter type of object, key and filename. Example: ul -s/-l <remote filename> <filename>");
+                            println!("Введите тип файла, его ключ и имя файла. Пример: ul -s/-l <remote filename> <filename>");
                             continue;
                         }
 
@@ -59,35 +66,35 @@ async fn main() {
                             }
                         };
 
-                        println!("Uploading...");
+                        println!("Загрузка...");
 
                         match args[1] {
                             "-s" => {
-                                let res = client.create_small_file(uuid, args[2], file).await;
+                                let res = client.create_small_file(args[2], file).await;
 
                                 if let Err(err) = res {
-                                    println!("Error: {:?}", err)
+                                    println!("Ошибка: {:?}", err)
                                 } else {
-                                    println!("Successful created")
+                                    println!("Успешно загружено")
                                 }
                             }
                             "-l" => {
-                                let res = client.create_large_file(uuid, args[2], file).await;
+                                let res = client.create_large_file(args[2], file).await;
 
                                 if let Err(err) = res {
-                                    println!("Error: {:?}", err)
+                                    println!("Ошибка: {:?}", err)
                                 } else {
-                                    println!("Successful created")
+                                    println!("Успешно загружено")
                                 }
                             }
                             _ => {
-                                println!("Unknown object type");
+                                println!("Неизвестный тип файла");
                             }
                         }
                     }
                     "dl" => {
                         if args.len() < 4 {
-                            println!("Enter type of object, key and filename. Example: dl -s/-l <remote filename> <filename>");
+                            println!("Введите тип файла, его ключ и имя файла. Пример: dl -s/-l <remote filename> <filename>");
                             continue;
                         }
 
@@ -99,44 +106,44 @@ async fn main() {
                             }
                         };
 
-                        println!("Downloading...");
+                        println!("Скачивание...");
 
                         match args[1] {
                             "-s" => {
-                                let res = client.read_small_file_last_version(uuid, args[2]).await;
+                                let res = client.read_small_file_last_version(args[2]).await;
 
                                 match res {
                                     Ok(bytes) => {
                                         let _ = file.write_all(&bytes).await;
-                                        println!("Successful download");
+                                        println!("Успешно скачано");
                                     }
                                     Err(err) => {
-                                        println!("Error: {:?}", err)
+                                        println!("Ошибка: {:?}", err)
                                     }
                                 }
                             }
                             "-l" => {
-                                let res = client.read_large_file(uuid, args[2]).await;
+                                let res = client.read_large_file(args[2]).await;
 
                                 match res {
                                     Ok(bytes) => {
                                         let _ = file.write_all(&bytes).await;
-                                        println!("Successful download");
+                                        println!("Успешно скачано");
                                     }
                                     Err(err) => {
-                                        println!("Error: {:?}", err)
+                                        println!("Ошибка: {:?}", err)
                                     }
                                 }
                             }
                             _ => {
-                                println!("Unknown object type");
+                                println!("Неизвестный объект");
                             }
                         }
                     }
                     "ac" => {
                         if args.len() < 3 {
                             println!(
-                                "Enter key and filename. Example: ac <remote filename> <filename>"
+                                "Введите ключ и новое имя файла. Пример: ac <remote filename> <filename>"
                             );
                             continue;
                         }
@@ -152,38 +159,36 @@ async fn main() {
                         let mut buffer = vec![];
                         let _ = file.read_to_end(&mut buffer).await;
 
-                        println!("Updating...");
+                        println!("Обновление...");
 
-                        let res = client
-                            .add_new_commit_to_small_file(uuid, args[1], &buffer)
-                            .await;
+                        let res = client.add_new_commit_to_small_file(args[1], &buffer).await;
 
                         if let Err(err) = res {
-                            println!("Error: {:?}", err)
+                            println!("Ошибка: {:?}", err)
                         } else {
-                            println!("Successful updated")
+                            println!("Успешно обновлено")
                         }
                     }
                     "delete" => {
                         if args.len() < 2 {
-                            println!("Enter filename");
+                            println!("Введите имя файла");
                             continue;
                         }
 
-                        println!("Deleting...");
-                        let res = client.delete_file(uuid, args[1]).await;
+                        println!("Удаление...");
+                        let res = client.delete_file(args[1]).await;
 
                         if let Err(err) = res {
-                            println!("Error: {:?}", err)
+                            println!("Ошибка: {:?}", err)
                         } else {
-                            println!("Successful deleted")
+                            println!("Успешно удалено")
                         }
                     }
                     "q" => {
                         break;
                     }
                     _ => {
-                        println!("Unknown command");
+                        println!("Неизвестная команда");
                     }
                 }
             }

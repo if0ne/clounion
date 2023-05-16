@@ -203,7 +203,11 @@ impl MetadataService for MetaServiceRedis {
         }
     }
 
-    async fn delete_object<P: AsRef<Path> + Send + Sync>(&self, user_id: Uuid, path: P) -> MetadataResult<()> {
+    async fn delete_object<P: AsRef<Path> + Send + Sync>(
+        &self,
+        user_id: Uuid,
+        path: P,
+    ) -> MetadataResult<()> {
         let mut connection = self.storage.get_async_connection().await.unwrap();
 
         let object: RedisResult<String> = connection
@@ -215,7 +219,10 @@ impl MetadataService for MetaServiceRedis {
                 let object: Object<Self::Dst> = serde_json::from_str(&object).unwrap();
 
                 if object.owner != user_id {
-                    return Err(MetadataError::NoPermission(path.as_ref().to_string_lossy().to_string()).into());
+                    return Err(MetadataError::NoPermission(
+                        path.as_ref().to_string_lossy().to_string(),
+                    )
+                    .into());
                 }
 
                 let _: RedisResult<bool> = connection

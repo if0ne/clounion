@@ -15,8 +15,7 @@ pub struct Config {
     #[arg(short, long)]
     pub(crate) block_size: usize,
     /// Идентификатор пользователя
-    pub(crate) client_uuid: Uuid,
-
+    pub(crate) client_id: Uuid,
 }
 
 impl Config {

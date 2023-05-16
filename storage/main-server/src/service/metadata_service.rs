@@ -38,7 +38,11 @@ pub trait MetadataService: Send + Sync + Sync {
         path: P,
     ) -> MetadataResult<Object<Self::Dst>>;
 
-    async fn delete_object<P: AsRef<Path> + Send + Sync>(&self, user_id: Uuid, path: P) -> MetadataResult<()>;
+    async fn delete_object<P: AsRef<Path> + Send + Sync>(
+        &self,
+        user_id: Uuid,
+        path: P,
+    ) -> MetadataResult<()>;
 
     async fn add_checksum<P: AsRef<Path> + Send + Sync>(
         &self,

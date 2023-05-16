@@ -260,9 +260,7 @@ impl MainServerServiceApi for MetadataController {
 
         let objects = objects
             .into_iter()
-            .filter(|el|
-                el.owner.as_bytes() == request.user_id.as_bytes()
-            )
+            .filter(|el| el.owner.as_bytes() == request.user_id.as_bytes())
             .map(|el| ObjectResponse {
                 filename: el.name.to_string(),
                 r#type: match el.inner {

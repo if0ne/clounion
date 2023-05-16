@@ -47,7 +47,12 @@ where
     T: Serialize + Debug,
 {
     pub fn new(name: FastStr, size: usize, owner: Uuid, inner: ObjectVariant<T>) -> Self {
-        Self { name, size, owner, inner }
+        Self {
+            name,
+            size,
+            owner,
+            inner,
+        }
     }
 
     pub fn update_block(&mut self, block_id: Uuid, part: usize, checksum: u32) {

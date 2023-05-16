@@ -8,7 +8,6 @@ use crate::client::proto_main_server_api::{
 use crate::config::Config;
 use futures::StreamExt;
 use tokio::io::AsyncReadExt;
-use uuid::Uuid;
 
 mod proto_data_node_api {
     tonic::include_proto!("data_node_api");
@@ -50,7 +49,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .create_small_file(CreateFileRequest {
                 filename: filename.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
                 size: file_size,
             })
@@ -109,7 +108,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .create_large_file(CreateFileRequest {
                 filename: filename.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
                 size: file_size,
             })
@@ -178,7 +177,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .get_last_version_small_file(GetSmallFileLastVersionRequest {
                 filename: filename.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -215,10 +214,7 @@ impl StorageClient {
         }
     }
 
-    pub async fn read_large_file(
-        &self,
-        filename: &str,
-    ) -> Result<Vec<u8>, StorageClientError> {
+    pub async fn read_large_file(&self, filename: &str) -> Result<Vec<u8>, StorageClientError> {
         let mut main_server_client = MainServerServiceApiClient::connect(format!(
             "http://{}",
             self.config.main_server_address
@@ -229,7 +225,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .get_large_file(GetLargeFileRequest {
                 filename: filename.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -272,10 +268,7 @@ impl StorageClient {
         Ok(data.into_iter().flatten().collect())
     }
 
-    pub async fn delete_file(
-        &self,
-        filename: &str,
-    ) -> Result<(), StorageClientError> {
+    pub async fn delete_file(&self, filename: &str) -> Result<(), StorageClientError> {
         let mut main_server_client = MainServerServiceApiClient::connect(format!(
             "http://{}",
             self.config.main_server_address
@@ -286,7 +279,7 @@ impl StorageClient {
         let _ = main_server_client
             .delete_file(DeleteFileRequest {
                 filename: filename.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -310,7 +303,7 @@ impl StorageClient {
         let block = main_server_client
             .add_commit_to_small_file(AddCommitSmallFileRequest {
                 filename: filename.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -359,7 +352,7 @@ impl StorageClient {
         let response = main_server_client
             .get_files(FileRequest {
                 prefix: prefix.to_string(),
-                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
             })
             .await
             .unwrap()
