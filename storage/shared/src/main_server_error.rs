@@ -11,6 +11,7 @@ pub enum MetadataError {
     TryingToGetSmallButItLarge(String),
     TryingToGetLargeButItSmall(String),
     WrongUuid(String),
+    NoPermission(String),
 }
 
 impl Display for MetadataError {
@@ -36,6 +37,9 @@ impl Display for MetadataError {
             }
             MetadataError::WrongUuid(msg) => {
                 write!(f, "Got wrong uuid format {0}", msg)
+            }
+            MetadataError::NoPermission(msg) => {
+                write!(f, "No permission for {0}", msg)
             }
         }
     }

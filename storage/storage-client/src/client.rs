@@ -35,7 +35,6 @@ impl StorageClient {
 
     pub async fn create_small_file(
         &self,
-        user_id: Uuid,
         filename: &str,
         mut file: tokio::fs::File,
     ) -> Result<(), StorageClientError> {
@@ -51,7 +50,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .create_small_file(CreateFileRequest {
                 filename: filename.to_string(),
-                user_id: user_id.to_bytes_le().to_vec(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
                 group_ids: vec![],
                 size: file_size,
             })
@@ -95,7 +94,6 @@ impl StorageClient {
 
     pub async fn create_large_file(
         &self,
-        user_id: Uuid,
         filename: &str,
         mut file: tokio::fs::File,
     ) -> Result<(), StorageClientError> {
@@ -111,7 +109,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .create_large_file(CreateFileRequest {
                 filename: filename.to_string(),
-                user_id: user_id.to_bytes_le().to_vec(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
                 group_ids: vec![],
                 size: file_size,
             })
@@ -168,7 +166,6 @@ impl StorageClient {
 
     pub async fn read_small_file_last_version(
         &self,
-        user_id: Uuid,
         filename: &str,
     ) -> Result<Vec<u8>, StorageClientError> {
         let mut main_server_client = MainServerServiceApiClient::connect(format!(
@@ -181,7 +178,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .get_last_version_small_file(GetSmallFileLastVersionRequest {
                 filename: filename.to_string(),
-                user_id: user_id.as_bytes().to_vec(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -220,7 +217,6 @@ impl StorageClient {
 
     pub async fn read_large_file(
         &self,
-        user_id: Uuid,
         filename: &str,
     ) -> Result<Vec<u8>, StorageClientError> {
         let mut main_server_client = MainServerServiceApiClient::connect(format!(
@@ -233,7 +229,7 @@ impl StorageClient {
         let remote_file = main_server_client
             .get_large_file(GetLargeFileRequest {
                 filename: filename.to_string(),
-                user_id: user_id.as_bytes().to_vec(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -278,7 +274,6 @@ impl StorageClient {
 
     pub async fn delete_file(
         &self,
-        user_id: Uuid,
         filename: &str,
     ) -> Result<(), StorageClientError> {
         let mut main_server_client = MainServerServiceApiClient::connect(format!(
@@ -291,7 +286,7 @@ impl StorageClient {
         let _ = main_server_client
             .delete_file(DeleteFileRequest {
                 filename: filename.to_string(),
-                user_id: user_id.as_bytes().to_vec(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -302,7 +297,6 @@ impl StorageClient {
 
     pub async fn add_new_commit_to_small_file(
         &self,
-        user_id: Uuid,
         filename: &str,
         data: &[u8],
     ) -> Result<(), StorageClientError> {
@@ -316,7 +310,7 @@ impl StorageClient {
         let block = main_server_client
             .add_commit_to_small_file(AddCommitSmallFileRequest {
                 filename: filename.to_string(),
-                user_id: user_id.to_bytes_le().to_vec(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
                 group_ids: vec![],
             })
             .await
@@ -365,6 +359,7 @@ impl StorageClient {
         let response = main_server_client
             .get_files(FileRequest {
                 prefix: prefix.to_string(),
+                user_id: self.config.client_uuid.to_bytes_le().to_vec(),
             })
             .await
             .unwrap()

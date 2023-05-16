@@ -27,6 +27,7 @@ use smallvec::SmallVec;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
+use zerocopy::AsBytes;
 
 pub struct MetadataController {
     metadata_service: Arc<MetaServiceRedis>,
@@ -125,10 +126,15 @@ impl MainServerServiceApi for MetadataController {
         request: Request<GetSmallFileRequest>,
     ) -> Result<Response<BlockInfo>, Status> {
         let request = request.into_inner();
+
         let file = self
             .metadata_service
-            .get_small_file(request.filename)
+            .get_small_file(request.filename.clone())
             .await?;
+
+        if file.owner.as_bytes() != request.user_id.as_bytes() {
+            return Err(MetadataError::NoPermission(request.filename).into());
+        }
 
         if let ObjectVariant::SmallFile(file) = file.inner {
             let block = file.commits.index(request.index as usize);
@@ -150,8 +156,12 @@ impl MainServerServiceApi for MetadataController {
 
         let file = self
             .metadata_service
-            .get_small_file(request.filename)
+            .get_small_file(request.filename.clone())
             .await?;
+
+        if file.owner.as_bytes() != request.user_id.as_bytes() {
+            return Err(MetadataError::NoPermission(request.filename).into());
+        }
 
         if let ObjectVariant::SmallFile(file) = file.inner {
             let block = file.commits.last();
@@ -173,8 +183,12 @@ impl MainServerServiceApi for MetadataController {
 
         let file = self
             .metadata_service
-            .add_commit_to_small_file(request.filename)
+            .add_commit_to_small_file(request.filename.clone())
             .await?;
+
+        if file.owner.as_bytes() != request.user_id.as_bytes() {
+            return Err(MetadataError::NoPermission(request.filename).into());
+        }
 
         if let ObjectVariant::SmallFile(file) = file.inner {
             let block = file.commits.last();
@@ -196,8 +210,12 @@ impl MainServerServiceApi for MetadataController {
 
         let file = self
             .metadata_service
-            .get_large_file(request.filename)
+            .get_large_file(request.filename.clone())
             .await?;
+
+        if file.owner.as_bytes() != request.user_id.as_bytes() {
+            return Err(MetadataError::NoPermission(request.filename).into());
+        }
 
         if let ObjectVariant::LargeFile(file) = file.inner {
             let blocks = file
@@ -223,8 +241,11 @@ impl MainServerServiceApi for MetadataController {
     ) -> Result<Response<EmptyResponse>, Status> {
         let request = request.into_inner();
 
+        let user_id = Uuid::from_slice(&request.user_id)
+            .map_err(|_| MetadataError::WrongUuid(format!("{:?}", &request.user_id)))?;
+
         self.metadata_service
-            .delete_object(request.filename)
+            .delete_object(user_id, request.filename)
             .await?;
 
         Ok(Response::new(EmptyResponse {}))
@@ -239,6 +260,9 @@ impl MainServerServiceApi for MetadataController {
 
         let objects = objects
             .into_iter()
+            .filter(|el|
+                el.owner.as_bytes() == request.user_id.as_bytes()
+            )
             .map(|el| ObjectResponse {
                 filename: el.name.to_string(),
                 r#type: match el.inner {

@@ -2,6 +2,7 @@ use clap::Parser;
 use serde::Deserialize;
 use std::path::Path;
 use tokio::io::AsyncReadExt;
+use uuid::Uuid;
 
 #[derive(Clone, Deserialize, Parser)]
 pub struct Config {
@@ -13,6 +14,9 @@ pub struct Config {
     /// Block size
     #[arg(short, long)]
     pub(crate) block_size: usize,
+    /// Идентификатор пользователя
+    pub(crate) client_uuid: Uuid,
+
 }
 
 impl Config {

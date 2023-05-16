@@ -38,6 +38,7 @@ where
 {
     pub(crate) name: FastStr,
     pub(crate) size: usize,
+    pub(crate) owner: Uuid,
     pub(crate) inner: ObjectVariant<T>,
 }
 
@@ -45,8 +46,8 @@ impl<T> Object<T>
 where
     T: Serialize + Debug,
 {
-    pub fn new(name: FastStr, size: usize, inner: ObjectVariant<T>) -> Self {
-        Self { name, size, inner }
+    pub fn new(name: FastStr, size: usize, owner: Uuid, inner: ObjectVariant<T>) -> Self {
+        Self { name, size, owner, inner }
     }
 
     pub fn update_block(&mut self, block_id: Uuid, part: usize, checksum: u32) {
