@@ -221,8 +221,7 @@ impl MetadataService for MetaServiceRedis {
                 if object.owner != user_id {
                     return Err(MetadataError::NoPermission(
                         path.as_ref().to_string_lossy().to_string(),
-                    )
-                    .into());
+                    ));
                 }
 
                 let _: RedisResult<bool> = connection

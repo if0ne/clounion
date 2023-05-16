@@ -3,7 +3,7 @@ use crate::client::proto_data_node_api::{Range, ReadBlockRequest, UpdateBlockReq
 use crate::client::proto_main_server_api::main_server_service_api_client::MainServerServiceApiClient;
 use crate::client::proto_main_server_api::{
     AddCommitSmallFileRequest, CreateFileRequest, DeleteFileRequest, FileRequest,
-    GetLargeFileRequest, GetSmallFileLastVersionRequest,
+    GetLargeFileRequest, GetSmallFileLastVersionRequest, GetSmallFileRequest,
 };
 use crate::config::Config;
 use futures::StreamExt;
@@ -179,6 +179,59 @@ impl StorageClient {
                 filename: filename.to_string(),
                 user_id: self.config.client_id.to_bytes_le().to_vec(),
                 group_ids: vec![],
+            })
+            .await
+            .map_err(|_| StorageClientError::ReadSmallFileError)?
+            .into_inner();
+
+        let mut data_node_client =
+            DataNodeServiceApiClient::connect(format!("http://{}", remote_file.endpoint))
+                .await
+                .map_err(|_| StorageClientError::WrongDatanodeAddressError)?;
+
+        let mut data = vec![];
+
+        let response = data_node_client
+            .read_block(ReadBlockRequest {
+                part: remote_file.part,
+                block_id: remote_file.block_id,
+            })
+            .await;
+
+        if let Ok(stream) = response {
+            let mut stream = stream.into_inner();
+            while let Some(part) = stream.next().await {
+                if let Ok(part) = part {
+                    data.push(part.data);
+                } else {
+                    return Err(StorageClientError::ReadSmallFileError);
+                }
+            }
+
+            Ok(data.into_iter().flatten().collect())
+        } else {
+            Err(StorageClientError::ReadSmallFileError)
+        }
+    }
+
+    pub async fn read_small_file(
+        &self,
+        filename: &str,
+        version: usize,
+    ) -> Result<Vec<u8>, StorageClientError> {
+        let mut main_server_client = MainServerServiceApiClient::connect(format!(
+            "http://{}",
+            self.config.main_server_address
+        ))
+        .await
+        .map_err(|_| StorageClientError::WrongMetadataAddressError)?;
+
+        let remote_file = main_server_client
+            .get_small_file(GetSmallFileRequest {
+                filename: filename.to_string(),
+                user_id: self.config.client_id.to_bytes_le().to_vec(),
+                group_ids: vec![],
+                index: version as u64,
             })
             .await
             .map_err(|_| StorageClientError::ReadSmallFileError)?

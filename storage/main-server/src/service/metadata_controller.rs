@@ -138,11 +138,16 @@ impl MainServerServiceApi for MetadataController {
 
         if let ObjectVariant::SmallFile(file) = file.inner {
             let block = file.commits.index(request.index as usize);
-            Ok(Response::new(BlockInfo {
-                block_id: block.id.as_bytes().to_vec(),
-                part: block.part as u64,
-                endpoint: block.dst.clone(),
-            }))
+
+            if let Some(block) = block {
+                Ok(Response::new(BlockInfo {
+                    block_id: block.id.as_bytes().to_vec(),
+                    part: block.part as u64,
+                    endpoint: block.dst.clone(),
+                }))
+            } else {
+                Err(MetadataError::WrongSmallFileVersion(request.filename).into())
+            }
         } else {
             unreachable!()
         }

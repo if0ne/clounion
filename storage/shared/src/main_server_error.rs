@@ -12,6 +12,7 @@ pub enum MetadataError {
     TryingToGetLargeButItSmall(String),
     WrongUuid(String),
     NoPermission(String),
+    WrongSmallFileVersion(String),
 }
 
 impl Display for MetadataError {
@@ -40,6 +41,9 @@ impl Display for MetadataError {
             }
             MetadataError::NoPermission(msg) => {
                 write!(f, "No permission for {0}", msg)
+            }
+            MetadataError::WrongSmallFileVersion(msg) => {
+                write!(f, "Wrong small file version for {0}", msg)
             }
         }
     }

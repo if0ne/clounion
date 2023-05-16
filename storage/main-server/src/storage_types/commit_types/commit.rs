@@ -20,9 +20,9 @@ where
         }
     }
 
-    pub fn index(&self, index: usize) -> &Block<T, u32> {
+    pub fn index(&self, index: usize) -> Option<&Block<T, u32>> {
         match self {
-            Commits::Sequence(seq) => &seq.seq[index],
+            Commits::Sequence(seq) => seq.seq.get(index),
         }
     }
 }

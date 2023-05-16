@@ -30,7 +30,7 @@ async fn main() {
 
                         println!("\tls <prefix> - список файлов пользователя; ARGS: <prefix> - префикс названия файла для поиска");
                         println!("\tul <-s/-l> <remote filename> <filename> - загрузка файла на сервер; ARGS: <-s> - маленький файл, <-l> - большой файл, <remote filename> - удаленное название файла, <filename> - название файла на локальной машине");
-                        println!("\tdl <-s/-l> <remote filename> <filename> - загрузка файла на локальную машину; ARGS: <-s> - маленький файл, <-l> - большой файл, <remote filename> - удаленное название файла, <filename> - название файла на локальной машине");
+                        println!("\tdl <-s/-l> <remote filename> <filename> [index] - загрузка файла на локальную машину; ARGS: <-s> - маленький файл, <-l> - большой файл, <remote filename> - удаленное название файла, <filename> - название файла на локальной машине, [index] - версия файла небольшого размера");
                         println!("\tac <remote filename> <filename> - обновление файла маленького размера; ARGS: <remote filename> - удаленное название файла, <filename> - название файла на локальной машине");
                         println!("\tdelete <remote filename> - удаление файла; ARGS:<remote filename> - удаленное название файла");
                     }
@@ -110,7 +110,16 @@ async fn main() {
 
                         match args[1] {
                             "-s" => {
-                                let res = client.read_small_file_last_version(args[2]).await;
+                                let res = if let Some(index) = args.get(4) {
+                                    if let Ok(index) = index.parse::<usize>() {
+                                        client.read_small_file(args[2], index).await
+                                    } else {
+                                        println!("Неверный формат версии");
+                                        continue;
+                                    }
+                                } else {
+                                    client.read_small_file_last_version(args[2]).await
+                                };
 
                                 match res {
                                     Ok(bytes) => {
