@@ -17,6 +17,9 @@ pub struct Config {
     /// Block size
     #[arg(short, long)]
     pub(crate) block_size: usize,
+    /// Maximum size of small file in KB
+    #[arg(short, long)]
+    pub(crate) max_small_file_size: usize,
     /// Volume of disk space to use in KB. If not set service will use all disk space
     #[arg(short, long)]
     pub(crate) disk_space: Option<u64>,

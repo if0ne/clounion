@@ -13,6 +13,7 @@ pub enum MetadataError {
     WrongUuid(String),
     NoPermission(String),
     WrongSmallFileVersion(String),
+    WrongSmallFileSize(usize, usize),
 }
 
 impl Display for MetadataError {
@@ -44,6 +45,13 @@ impl Display for MetadataError {
             }
             MetadataError::WrongSmallFileVersion(msg) => {
                 write!(f, "Wrong small file version for {0}", msg)
+            }
+            MetadataError::WrongSmallFileSize(src, constraint) => {
+                write!(
+                    f,
+                    "Wrong small file size. Source file {0}, but max size is {1}",
+                    src, constraint
+                )
             }
         }
     }

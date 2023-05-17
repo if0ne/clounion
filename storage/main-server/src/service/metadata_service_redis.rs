@@ -43,6 +43,13 @@ impl MetadataService for MetaServiceRedis {
         &self,
         params: CreationParam<P>,
     ) -> MetadataResult<Object<Self::Dst>> {
+        if params.size > self.config.max_small_file_size {
+            return Err(MetadataError::WrongSmallFileSize(
+                params.size,
+                self.config.max_small_file_size,
+            ));
+        }
+
         let response = self.data_node_client.create_blocks(1).await?;
         let object = Object::new(
             params.path.as_ref().to_string_lossy().into(),

@@ -2,3 +2,4 @@ self_address = "[::1]"
 port = 8000
 block_size = 65536
 database_connection = "redis://default:redispw@localhost:6379"
+max_small_file_size = 65536
