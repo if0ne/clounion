@@ -15,12 +15,12 @@ async fn one_hundred_big_file_processing() {
         let user = Uuid::new_v4();
         let filename = format!("{}", user);
         client
-            .create_large_file(user, &filename, file)
+            .create_large_file(&filename, file)
             .await
             .unwrap();
 
-        client.read_large_file(user, &filename).await.unwrap();
-        client.delete_file(user, &filename).await.unwrap();
+        client.read_large_file(&filename).await.unwrap();
+        client.delete_file(&filename).await.unwrap();
     });
     futures::future::join_all(jobs).await;
 }

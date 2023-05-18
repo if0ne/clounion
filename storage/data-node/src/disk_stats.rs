@@ -36,7 +36,7 @@ impl DiskStats {
             mount: mount.as_ref().to_path_buf(),
         };
 
-        tracing::debug!(
+        tracing::info!(
             "Found disk. Info: available_space: {} bytes, used_space: {} bytes, mount: {:?}",
             disk_stats.available_space,
             used_space,

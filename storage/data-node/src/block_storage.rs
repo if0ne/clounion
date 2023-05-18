@@ -189,6 +189,110 @@ impl BlockStorage {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+
+    #[tokio::test]
+    async fn test_block_storage_crud() {
+        let message = b"Hello, Pavel";
+
+        let data_node_info = DataNodeInfo::new(Config {
+            main_server_address: "http://[::1]:8000".to_string(),
+            self_address: "http://[::1]".to_string(),
+            port: 40000,
+            block_size: 32,
+            max_small_file_size: 16,
+            disk_space: None,
+            working_directory: "test_dir".to_string(),
+            read_buffer: 8,
+        })
+            .await;
+        let buffer_size = data_node_info.io_buffer;
+
+        let data_node = BlockStorage::new(data_node_info).await.unwrap();
+        let (part, uuid) = data_node.create_block(0, Uuid::new_v4()).await.unwrap();
+
+        data_node.update_block(uuid, part, 0..message.len(), message).await.unwrap();
+        let (path, len) = data_node.get_block_info(uuid, part).await.unwrap();
+        let chunk_count = len / buffer_size;
+        let last_chunk = len - chunk_count * buffer_size;
+
+        let mut read_message = vec![];
+        for i in 0..(chunk_count + 1) {
+            let bytes = if i == chunk_count {
+                if last_chunk == 0 {
+                    break;
+                }
+                (i * buffer_size)..(i * buffer_size + last_chunk)
+            } else {
+                (i * buffer_size)..((i + 1) * buffer_size)
+            };
+            let read = data_node.read_block(&path, bytes).await.unwrap();
+            read_message = [read_message, read].concat();
+        }
+
+        assert_eq!(message.as_slice(), read_message.as_slice());
+        data_node.delete_block(uuid, part).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_multi_read_access() {
+        let message = std::iter::repeat(*b"Hello, Pavel ")
+            .take(4096)
+            .flatten()
+            .collect::<Vec<_>>();
+        assert_eq!(message.len(), 13 * 4096);
+
+        let data_node_info = DataNodeInfo::new(Config {
+            main_server_address: "http://[::1]:8000".to_string(),
+            self_address: "http://[::1]".to_string(),
+            port: 40000,
+            block_size: 65536,
+            max_small_file_size: 65536,
+            disk_space: None,
+            working_directory: "test_dir".to_string(),
+            read_buffer: 1000,
+        })
+            .await;
+        let buffer_size = data_node_info.io_buffer;
+
+        let data_node = BlockStorage::new(data_node_info).await.unwrap();
+        let (part, uuid) = data_node.create_block(0, Uuid::new_v4()).await.unwrap();
+
+        data_node.update_block(uuid, part, 0..message.len(), &message).await.unwrap();
+        let (path, len) = data_node.get_block_info(uuid, part).await.unwrap();
+        let chunk_count = len / buffer_size;
+        let last_chunk = len - chunk_count * buffer_size;
+        let mut futures = vec![];
+        for _ in 0..100 {
+            futures.push(async {
+                let mut read_message = vec![];
+                for i in 0..(chunk_count + 1) {
+                    let bytes = if i == chunk_count {
+                        if last_chunk == 0 {
+                            break;
+                        }
+                        (i * buffer_size)..(i * buffer_size + last_chunk)
+                    } else {
+                        (i * buffer_size)..((i + 1) * buffer_size)
+                    };
+                    let read = data_node.read_block(&path, bytes).await.unwrap();
+                    read_message = [read_message, read].concat();
+                }
+                read_message
+            })
+        }
+        let results = futures::future::join_all(futures).await;
+        for i in results {
+            assert_eq!(message.as_slice(), i.as_slice());
+        }
+
+        data_node.delete_block(uuid, part).await.unwrap();
+    }
+}
+
 #[cfg(any(test, bench))]
 impl Drop for BlockStorage {
     fn drop(&mut self) {

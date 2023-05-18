@@ -42,25 +42,25 @@ impl DataNodeInfo {
             tracing::warn!("Can't save the state. It can lead to memory inconsistency.");
         }
 
-        tracing::debug!(
+        tracing::info!(
             "Working directory: {} ",
             working_directory.to_string_lossy()
         );
-        tracing::debug!(
+        tracing::info!(
             "Total space: {} bytes | {} Kb | {} Mb | {} Gb",
             total_space,
             total_space / 1024,
             total_space / 1024 / 1024,
             total_space / 1024 / 1024 / 1024
         );
-        tracing::debug!(
+        tracing::info!(
             "Used space: {} bytes | {} Kb | {} Mb | {} Gb",
             used_space,
             used_space / 1024,
             used_space / 1024 / 1024,
             used_space / 1024 / 1024 / 1024
         );
-        tracing::debug!(
+        tracing::info!(
             "Block size: {} bytes | {} Kb | {} Mb",
             config.block_size,
             config.block_size / 1024,
